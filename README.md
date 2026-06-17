@@ -42,14 +42,14 @@ When a required security control is absent, the system outputs a clear **Complia
 ```text
 [Raw Engineering Docs] ─┐
 [Codebase Specs]        ├──▶ ┌───────────────────────────┐ ───▶ [Buyer’s Questionnaire]
-[API Configurations] ───┘    │      PROOFLINE ENGINE      │
+[API Configurations] ───┘    │    VERIFICATION ENGINE    │
                              └─────────────┬─────────────┘
                                            │
                           ┌────────────────┴────────────────┐
                           ▼                                 ▼
-              [Verified Claims]                 [Compliance Deficits]
-              • Automated Drafts                • Programmatic Refusals
-              • Evidence Citations              • Urgent Engineering Tasks
+                  [Verified Claims]               [Compliance Deficits]
+                  • Automated Drafts              • Programmatic Refusals
+                  • Evidence Citations            • Urgent Engineering Tasks
 ```
 
 #### 1. Ingestion
