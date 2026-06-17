@@ -63,9 +63,10 @@ When a required security control is absent, the system outputs a clear **Complia
 
 The system outputs two key deliverables:
 
-**A. Completed Compliance Document**
+**Completed Compliance Document**
 A buyer-ready compliance questionnaire containing only verified answers with supporting evidence citations.
-**B. Compliance Deficit Report**
+
+**Compliance Deficit Report**
 A structured report detailing:
 - Which requirements could not be verified
 - Which controls are missing
