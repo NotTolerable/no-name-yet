@@ -10,7 +10,7 @@ When a small software startup lands a pilot with a highly regulated enterprise, 
 
 The enterprise security team sends the founder a 150-question security and AI-risk assessment.
 
-Startups then face a dilemma:
+The startups with limited man-power then face a dilemma:
 
 #### 1. Expensive Solutions
 
@@ -52,77 +52,36 @@ When a required security control is absent, the system outputs a clear **Complia
                   • Evidence Citations            • Urgent Engineering Tasks
 ```
 
-#### 1. Ingestion
+**1. Ingestion**: The user connects their raw, unorganized technical files (architecture docs, API specifications, markdown files, or system specs). The system parses these materials into a structured Technical State Map (a lightweight JSON database of verified engineering facts).
 
-The user connects their raw, unorganized technical materials, including:
+**2. Deterministic Verification (RAG)**: The user uploads the blank questionnaire. The system checks each question against the Technical State Map using a strict policy: No explicit technical evidence = No positive claim.
 
-- Architecture documents
-- API specifications
-- Markdown files
-- System design notes
-- Security policies
-- Codebase documentation
-- Configuration references
+- **If evidence exists**: The system drafts a professional response and appends a citation pointing directly to the source file that proves the claim.
+- **If evidence is missing**: The system blocks the answer and refuses to fabricate compliance.
 
-The system parses these materials into a structured **Technical State Map**, a lightweight JSON database of verified engineering facts.
-
-#### 2. Deterministic Verification
-
-The user uploads the blank enterprise questionnaire.
-
-The system checks each question against the Technical State Map using a strict policy:
-
-> **No explicit technical evidence = no positive claim.**
-
-**If evidence exists**
-
-The system drafts a professional response and appends a citation pointing directly to the source file that proves the claim.
-
-**If evidence is missing**
-
-The system blocks the answer and refuses to fabricate compliance.
-
----
-
-#### 3. Gap Export
+**3. Gap Export**
 
 The system outputs two key deliverables:
 
 **A. Completed Compliance Document**
-
 A buyer-ready compliance questionnaire containing only verified answers with supporting evidence citations.
-
 **B. Compliance Deficit Report**
-
 A structured report detailing:
-
 - Which requirements could not be verified
 - Which controls are missing
 - Why the system refused to answer
 - What technical work is needed
 - The exact engineering tasks required to close each gap
 
-### What should set us apart / makes this unique
-
-This product captures early-stage founders at their moment of highest pain: a blocked enterprise revenue deal.
-
-These startups are not yet mature enough to purchase expensive compliance platforms, but they urgently need a credible way to respond to enterprise security reviews.
-
 #### Tech Stack
 
-The system can be built using standard web and database components, such as:
+This is what I was thinking for the tech-stack, but we can explore other options:
 
 - Next.js
 - Python/FastAPI
 - Supabase
 - Object storage
-- Lightweight RAG pipelines (I'm thinking OpenAI 
+- Lightweight RAG pipelines (I'm thinking OpenAI or Gemini)
 - Structured JSON state mapping
 
 The estimated infrastructure cost to serve a single user should only be a few bucks a month.
-
-#### TLDR
-
-This is not an AI compliance writer.
-
-It is a **truth-preserving enterprise security pre-flight checker** for startups that need to pass procurement without lying, guessing, or exposing themselves to catastrophic liability.
