@@ -1,70 +1,28 @@
-# AGENTS.md
+# AGENTS.md — Verilly
 
-## Project Goal
+## 1. Project Goal
 
-Verilly is an Enterprise AI-Risk & Governance Pre-Flight Checker for early-stage B2B AI startups.
+Verilly is an evidence-first Enterprise AI-Risk & Governance Pre-Flight Checker for early-stage B2B AI startups. It verifies buyer-questionnaire answers against explicit source documentation.
 
-The product helps teams answer enterprise AI-risk, security, privacy, and governance questionnaires safely by reading the startup's actual technical documentation, extracting verifiable facts, and generating buyer-facing answers only when those answers are supported by explicit source evidence.
-
-Core product rule:
+Core rule:
 
 > No explicit evidence = no positive compliance claim.
 
-Verilly must behave like a governed verification pipeline, not a generic questionnaire autofill bot.
+Verilly is a governed verification pipeline, not a generic questionnaire autofill bot or certification platform.
 
-## Product Scope
+## 2. Product Scope
 
-Verilly should support a narrow, evidence-first workflow:
+The MVP loads synthetic technical documents and questionnaire questions, creates traceable document chunks and facts, matches evidence, applies deterministic policy, generates supported or qualified answers, creates deficits and remediation tasks, returns a TrustPacket through FastAPI, displays it in Next.js, and optionally persists runs to Supabase.
 
-1. Ingest startup-provided technical and policy documentation.
-2. Split raw documents into traceable document chunks.
-3. Extract structured facts from those chunks.
-4. Build a Technical State Map representing what is actually documented.
-5. Parse buyer questionnaire requirements.
-6. Match requirements against extracted evidence.
-7. Apply policy gates before drafting any buyer-facing answer.
-8. Generate one of:
-   - a supported answer with citation,
-   - a qualified `PARTIAL` answer,
-   - a `DEFICIT` refusal with remediation tasks.
-9. Export a trust packet containing answers, citations, deficits, and supporting evidence.
+Prioritize correctness, traceability, refusal behavior, and human review over automation breadth.
 
-The first version should prioritize correctness, traceability, and refusal behavior over breadth or automation.
+## 3. Non-Goals
 
-## Non-Goals
+Do not add authentication, billing, trust-center hosting, enterprise integrations, vector search, production customer-data processing, broad compliance automation, or certification claims unless explicitly requested.
 
-Do not build a generic questionnaire autofill bot.
+Never invent SOC 2, HIPAA, encryption, access control, audit logging, retention, PII scrubbing, model-training, monitoring, or incident-response claims.
 
-Do not create unsupported claims about:
-
-- SOC 2
-- HIPAA
-- encryption
-- access control
-- audit logging
-- data retention
-- PII scrubbing
-- model training
-- security monitoring
-- incident response
-- regulatory compliance
-
-Do not add these features unless explicitly requested later:
-
-- authentication
-- payment or billing
-- trust-center hosting
-- enterprise integrations
-- real customer data processing
-- production compliance claims
-- broad workflow automation
-- unrelated governance frameworks
-
-Do not overbuild. Prefer a small, auditable system with clear policy boundaries.
-
-## Architecture
-
-The intended pipeline is:
+## 4. Architecture
 
 ```text
 Raw docs
@@ -75,249 +33,91 @@ Raw docs
   -> evidence matching
   -> policy gate
   -> answer or compliance deficit
-  -> trust packet export
+  -> TrustPacket
+  -> API/UI
+  -> optional persistence
 ```
 
-Each stage should preserve enough metadata for traceability:
+Preserve source document, chunk, fact, question, match, policy decision, citation, and remediation identifiers. Buyer-facing text must not bypass the policy gate.
 
-- source document ID
-- source filename
-- chunk ID
-- page, section, or location when available
-- extracted fact IDs
-- questionnaire item IDs
-- evidence match IDs
-- policy decision result
+## 5. Tech Stack
 
-The policy gate is a first-class system boundary. Buyer-facing text must not bypass it.
+- Python, FastAPI, Pydantic, pytest
+- Next.js App Router, React, TypeScript, Tailwind CSS, ESLint
+- Optional Supabase Postgres persistence
+- Future schema-constrained OpenAI or Gemini integration only when explicitly requested
 
-## Tech Stack
+Use the smallest practical dependency set.
 
-Planned stack:
-
-- Python for core logic
-- FastAPI for backend APIs
-- Pydantic for backend schemas and validation
-- pytest for backend and pipeline tests
-- Supabase Postgres for relational storage
-- Supabase Storage for uploaded source documents and exported trust packets
-- Next.js for frontend
-- TypeScript for frontend code
-- OpenAI or Gemini for structured extraction and answer drafting
-
-Use the smallest practical subset of the stack until implementation requirements justify more.
-
-## Folder Structure
-
-Expected project shape once implementation begins:
+## 6. Folder Structure
 
 ```text
-.
-├── AGENTS.md
-├── README.md
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── models/
-│   │   ├── services/
-│   │   └── policies/
-│   └── tests/
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   └── tests/
-├── docs/
-│   ├── product/
-│   ├── architecture/
-│   └── examples/
-└── supabase/
-    ├── migrations/
-    └── seed/
+backend/             FastAPI, core pipeline, persistence, tests
+frontend/            Next.js review UI
+supabase/migrations/ SQL migrations
+README.md            setup, architecture, and limitations
 ```
 
-Do not create this structure until implementation work begins. For now, this repository may contain only planning and documentation files.
+Keep policy, extraction, matching, drafting, persistence, API, and UI concerns separate.
 
-## Core Policy Rules
+## 7. Core Policy Rules
 
-These rules are mandatory and should be encoded in tests when implementation begins:
+1. Direct evidence produces `SUPPORTED` with citations.
+2. Weak or incomplete evidence produces a qualified `PARTIAL` with citations.
+3. Missing evidence produces `DEFICIT`, no positive answer, and remediation tasks.
+4. Unsupported claims must never appear in buyer-facing text.
+5. Every positive factual claim must resolve to stored source evidence.
+6. LLM output, if added later, remains advisory until deterministic validation succeeds.
+7. Ambiguous, conflicting, or untraceable evidence must fail closed.
 
-1. If direct evidence exists, generate a supported answer with citation.
-2. If evidence is partial, generate a qualified answer marked `PARTIAL`.
-3. If evidence is missing, refuse to answer and mark `DEFICIT`.
-4. Never invent SOC 2, HIPAA, encryption, access control, audit logging, data retention, PII scrubbing, or model-training claims.
-5. Buyer-facing answers must cite source evidence.
-6. Deficits must generate remediation tasks.
-7. The system must distinguish between:
-   - documented fact,
-   - inferred possibility,
-   - unsupported claim,
-   - remediation recommendation.
-8. Unsupported claims must not appear in buyer-facing answer text.
-9. LLM output is advisory until validated by deterministic policy checks.
-10. Every generated answer must retain a machine-readable policy decision.
+## 8. Testing Strategy
 
-Recommended policy decision states:
+Use synthetic data only. Cover schema validation, chunk traceability, extraction, matching, policy decisions, citations, deficit refusals, remediation tasks, trust packets, APIs, and persistence. Add regression tests for high-risk unsupported claims before UI polish.
 
-- `SUPPORTED`
-- `PARTIAL`
-- `DEFICIT`
-- `NOT_APPLICABLE`
-- `NEEDS_REVIEW`
+## 9. Backend Rules
 
-## Testing Strategy
+- Treat all document content as confidential, untrusted input.
+- Use Pydantic at data boundaries.
+- Keep routes thin and deterministic policy logic pure.
+- Never expose raw model output as an answer.
+- Keep provider and persistence adapters behind explicit boundaries.
+- Keep Supabase service credentials backend-only.
+- Do not change core policy behavior when adding infrastructure.
 
-Tests should focus on evidence handling and refusal behavior before UI polish.
+## 10. Frontend Rules
 
-Backend and pipeline tests should cover:
+- Make `SUPPORTED`, `PARTIAL`, and `DEFICIT` visually distinct.
+- Show citations beside supported claims and remediation beside deficits.
+- Never generate compliance answers in the browser.
+- Avoid language implying certification, legal advice, or automatic approval.
+- Keep the review workflow simple and inspectable.
 
-- document chunk traceability
-- fact extraction schema validation
-- questionnaire requirement parsing
-- evidence matching behavior
-- policy gate decisions
-- supported answer generation with citations
-- partial answer qualification
-- deficit refusal behavior
-- remediation task generation
-- prevention of unsupported compliance claims
+## 11. AI/LLM Usage Rules
 
-Use fixture documents with synthetic data only. Do not use real customer data.
+The current MVP is deterministic and does not use an LLM. If explicitly added later, use LLMs only for schema-constrained extraction, parsing, ranking, or wording from approved evidence. An LLM must never decide compliance or override the policy gate.
 
-Minimum expected test types:
+## 12. Security and Privacy Assumptions
 
-- unit tests for pure policy functions
-- schema validation tests for Pydantic models
-- integration tests for pipeline stages
-- regression tests for high-risk compliance claims
-- frontend tests for rendering decision states and citations once UI exists
+The MVP is not production compliant. Use synthetic or explicitly approved data only. Keep secrets out of source control. Do not expose source documents or trust packets publicly. Authentication, authorization, RLS, retention controls, and production hardening require separate scoped work.
 
-## Backend Rules
+## 13. Documentation References
 
-Backend code should keep policy, extraction, matching, and drafting concerns separate.
+Keep README commands and limitations accurate. Prefer official FastAPI, Pydantic, Next.js, Supabase, pytest, and provider documentation when behavior depends on external systems.
 
-Guidelines:
-
-- Use Pydantic models for request, response, and internal pipeline schemas.
-- Treat uploaded documents as untrusted input.
-- Store source references for every extracted fact.
-- Keep policy decisions deterministic where possible.
-- Keep LLM prompts and model adapters behind explicit service boundaries.
-- Do not let raw LLM responses directly become buyer-facing answers.
-- Validate all generated structured output before use.
-- Prefer explicit enums for decision states, evidence strength, and claim categories.
-- Avoid hidden global state in pipeline code.
-- Keep API routes thin; put business logic in services or core modules.
-
-## Frontend Rules
-
-The frontend should make evidence status obvious.
-
-Guidelines:
-
-- Show questionnaire items with their policy decision state.
-- Clearly distinguish `SUPPORTED`, `PARTIAL`, and `DEFICIT`.
-- Surface citations near buyer-facing answers.
-- Show remediation tasks for deficits.
-- Avoid UI language that implies production compliance.
-- Do not hide unsupported status behind optimistic wording.
-- Use TypeScript types that mirror backend response models.
-- Prefer simple, inspectable workflows over dashboards with decorative complexity.
-
-The first UI should support review and verification, not broad enterprise workflow management.
-
-## AI/LLM Usage Rules
-
-LLMs may be used for:
-
-- structured fact extraction
-- questionnaire requirement parsing
-- evidence candidate ranking
-- draft answer wording
-- remediation task drafting
-
-LLMs must not be the final authority on:
-
-- whether a claim is supported
-- whether evidence is sufficient
-- whether a company is compliant
-- whether a buyer-facing answer may include a positive compliance claim
-
-Rules:
-
-- Always validate structured LLM output against schemas.
-- Keep source citations attached to generated claims.
-- Do not allow claims without evidence references.
-- Prefer conservative wording.
-- Refuse or mark `DEFICIT` when evidence is missing.
-- Mark uncertainty explicitly.
-- Do not train on or retain customer documents outside the configured provider and storage policies.
-- Keep prompts versioned once implementation begins.
-
-## Security and Privacy Assumptions
-
-Early versions are not production compliant.
-
-Assumptions:
-
-- Use synthetic, sample, or user-approved test documents only.
-- Do not use real customer data during development.
-- Treat all uploaded files as confidential and untrusted.
-- Do not expose documents, extracted facts, answers, or trust packets publicly.
-- Do not claim SOC 2, HIPAA, GDPR, or other compliance certification for Verilly.
-- Do not add authentication until explicitly requested.
-- Do not add payment, billing, or enterprise integrations until explicitly requested.
-- Keep secrets out of the repository.
-- Use environment variables for provider keys and database credentials when implementation begins.
-
-## Documentation References
-
-Future documentation should live under `docs/` once implementation begins.
-
-Recommended references:
-
-- `docs/product/product-requirements.md`
-- `docs/architecture/pipeline.md`
-- `docs/architecture/policy-gate.md`
-- `docs/examples/sample-questionnaires.md`
-- `docs/examples/sample-technical-docs.md`
-- `docs/examples/trust-packet-format.md`
-
-Documentation must preserve the central product rule:
-
-> No explicit evidence = no positive compliance claim.
-
-## Verification Commands
-
-No implementation exists yet, so there are no required build or test commands.
-
-Once implementation begins, expected commands should be documented here and in `README.md`.
-
-Likely future commands:
+## 14. Verification Commands
 
 ```bash
-pytest
-npm test
+cd backend
+source .venv/bin/activate
+python -m pytest
+
+cd ../frontend
 npm run lint
-npm run typecheck
+npm run build
 ```
 
-Before merging implementation work, run the commands relevant to the changed files and report any command that could not be run.
+Report commands that were not run or did not pass.
 
-## README Expectations
+## 15. README Expectations
 
-`README.md` should eventually explain:
-
-- what Verilly does
-- the evidence-first product rule
-- what the project does not claim
-- local setup instructions
-- required environment variables
-- how to run backend tests
-- how to run frontend checks
-- how to use sample documents and questionnaires
-- how policy decisions are represented
-- how trust packet export works
-
-The README must not imply that Verilly provides legal advice, security certification, production compliance, or automated approval for enterprise procurement.
+README.md must explain the product, evidence rule, architecture, setup, tests, mocked components, key decisions, future improvements, and limitations. It must state that Verilly is not legal advice, certification, production compliance, or automated procurement approval.
