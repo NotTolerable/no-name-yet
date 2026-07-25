@@ -1,0 +1,95 @@
+name: Bug
+description: Report a reproducible Verilly defect or safety regression.
+title: "[Bug]: "
+labels: []
+assignees: []
+body:
+  - type: textarea
+    id: observed_behavior
+    attributes:
+      label: Observed behaviour
+      description: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behaviour
+      description: What should have happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest deterministic reproduction possible.
+      placeholder: |
+        1. Prepare...
+        2. Run...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected_layer
+    attributes:
+      label: Affected architectural layer
+      options:
+        - Deterministic core
+        - Workflow/application
+        - AI integration
+        - API
+        - Persistence
+        - Frontend
+        - Documentation
+        - Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs_or_failures
+    attributes:
+      label: Logs or test failures
+      description: Paste redacted errors or failing test names. Do not include secrets or customer data.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: safety_impact
+    attributes:
+      label: Safety impact
+      description: Explain any effect on evidence eligibility, claim authorization, citations, readiness, privacy, or exports.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: unsupported_claim_risk
+    attributes:
+      label: Could this allow an unsupported buyer-facing claim?
+      description: Select "Unknown" if the impact has not yet been ruled out.
+      options:
+        - "Yes"
+        - "Unknown"
+        - "No"
+    validations:
+      required: true
+
+  - type: textarea
+    id: likely_files
+    attributes:
+      label: Likely files
+      description: List suspected files or modules, if known.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: regression_test
+    attributes:
+      label: Regression-test requirement
+      description: Describe the test that should fail before the fix and pass afterward.
+    validations:
+      required: true
