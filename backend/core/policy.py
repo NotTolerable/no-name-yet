@@ -1,8 +1,18 @@
 """Deterministic policy gate for evidence-backed questionnaire decisions."""
 
 from collections.abc import Iterable
-
-from core.models import Fact, PolicyDecision, PolicyStatus, Question
+from core.models import (
+    AnswerValue,
+    EvidenceStatus,
+    Fact,
+    FactApplicability,
+    FactPolarity,
+    FactReviewStatus,
+    PolicyDecision,
+    Question,
+    QuestionResponseKind,
+)
+from core.evidence_matcher import canonical_category
 
 
 STRONG_EVIDENCE_THRESHOLD = 0.8
@@ -60,11 +70,34 @@ def _fact_explicitly_supports(control: str, fact: Fact) -> bool:
 
 
 def _eligible_facts(question: Question, matching_facts: Iterable[Fact]) -> list[Fact]:
-    facts = list(matching_facts)
+    facts = [
+        fact
+        for fact in matching_facts
+        if fact.review_status is FactReviewStatus.APPROVED
+    ]
     risky_control = _risky_control_for(question)
     if risky_control is None:
         return facts
     return [fact for fact in facts if _fact_explicitly_supports(risky_control, fact)]
+
+
+def _binary_answer_value(question: Question, facts: list[Fact]) -> AnswerValue:
+    values: set[AnswerValue] = set()
+    required_category = canonical_category(question.required_control)
+    for fact in facts:
+        if fact.applicability is FactApplicability.NOT_APPLICABLE:
+            if canonical_category(fact.category) != required_category:
+                continue
+            values.add(AnswerValue.NOT_APPLICABLE)
+        elif fact.polarity is FactPolarity.NEUTRAL:
+            continue
+        elif fact.polarity is question.affirmative_polarity:
+            values.add(AnswerValue.YES)
+        else:
+            values.add(AnswerValue.NO)
+    if len(values) == 1:
+        return next(iter(values))
+    return AnswerValue.UNKNOWN
 
 
 def evaluate_question_policy(
@@ -81,7 +114,13 @@ def evaluate_question_policy(
     if not eligible_facts:
         return PolicyDecision(
             question_id=question.id,
-            status=PolicyStatus.DEFICIT,
+            evidence_status=EvidenceStatus.DEFICIT,
+            answer_value=(
+                AnswerValue.UNKNOWN
+                if question.response_kind is QuestionResponseKind.BINARY
+                else None
+            ),
+            response_kind=question.response_kind,
             reason=(
                 "No explicit evidence was found for this requirement; "
                 "a positive claim is not permitted."
@@ -90,12 +129,39 @@ def evaluate_question_policy(
         )
 
     cited_fact_ids = [fact.id for fact in eligible_facts]
-    if any(fact.confidence >= STRONG_EVIDENCE_THRESHOLD for fact in eligible_facts):
+    answer_value = (
+        _binary_answer_value(question, eligible_facts)
+        if question.response_kind is QuestionResponseKind.BINARY
+        else None
+    )
+    has_strong_evidence = any(
+        fact.confidence >= STRONG_EVIDENCE_THRESHOLD for fact in eligible_facts
+    )
+
+    if (
+        question.response_kind is QuestionResponseKind.BINARY
+        and answer_value is AnswerValue.UNKNOWN
+    ):
         return PolicyDecision(
             question_id=question.id,
-            status=PolicyStatus.SUPPORTED,
+            evidence_status=EvidenceStatus.PARTIAL,
+            answer_value=answer_value,
+            response_kind=question.response_kind,
             reason=(
-                "Strong, explicit evidence supports this requirement and the "
+                "Available evidence is neutral or conflicting, so it does not "
+                "permit an unqualified binary answer."
+            ),
+            cited_fact_ids=cited_fact_ids,
+        )
+
+    if has_strong_evidence:
+        return PolicyDecision(
+            question_id=question.id,
+            evidence_status=EvidenceStatus.SUPPORTED,
+            answer_value=answer_value,
+            response_kind=question.response_kind,
+            reason=(
+                "Strong, explicit evidence supports this answer and the "
                 "supporting facts are cited."
             ),
             cited_fact_ids=cited_fact_ids,
@@ -103,7 +169,9 @@ def evaluate_question_policy(
 
     return PolicyDecision(
         question_id=question.id,
-        status=PolicyStatus.PARTIAL,
+        evidence_status=EvidenceStatus.PARTIAL,
+        answer_value=answer_value,
+        response_kind=question.response_kind,
         reason=(
             "Only partial or weak evidence was found; any response must state "
             "this limitation and remain qualified."

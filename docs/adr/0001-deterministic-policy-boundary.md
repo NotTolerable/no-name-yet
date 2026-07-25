@@ -5,7 +5,7 @@
 
 ## Context
 
-Proofline drafts security and compliance questionnaire answers from incomplete documentation. Optimistic inference can create contractual and security risk. Future extraction or wording may become more sophisticated, but answer authorization must remain reviewable and reproducible.
+Verilly drafts security and compliance questionnaire answers from incomplete documentation. Optimistic inference can create contractual and security risk. Future extraction or wording may become more sophisticated, but answer authorization must remain reviewable and reproducible.
 
 ## Decision
 

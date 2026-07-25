@@ -1,5 +1,12 @@
 from core.evidence_matcher import match_question_to_facts
-from core.models import Fact, Question
+from core.models import (
+    Fact,
+    FactApplicability,
+    FactPolarity,
+    FactReviewStatus,
+    Question,
+    QuestionResponseKind,
+)
 
 
 def make_question(
@@ -8,12 +15,16 @@ def make_question(
     text="Do you isolate customer data by tenant?",
     required_control="tenant_isolation",
     risk_domain="security",
+    response_kind=QuestionResponseKind.BINARY,
+    affirmative_polarity=FactPolarity.POSITIVE,
 ):
     return Question(
         id=question_id,
         question_text=text,
         required_control=required_control,
         risk_domain=risk_domain,
+        response_kind=response_kind,
+        affirmative_polarity=affirmative_polarity,
     )
 
 
@@ -23,6 +34,9 @@ def make_fact(
     category="tenant_isolation",
     claim="Queries are scoped to the authenticated tenant.",
     evidence_quote="Every query is scoped using the authenticated tenant_id.",
+    polarity=FactPolarity.POSITIVE,
+    review_status=FactReviewStatus.APPROVED,
+    applicability=FactApplicability.APPLICABLE,
 ):
     return Fact(
         id=fact_id,
@@ -32,6 +46,9 @@ def make_fact(
         source_document="architecture.md",
         source_chunk_id="chunk-1",
         confidence=0.9,
+        polarity=polarity,
+        review_status=review_status,
+        applicability=applicability,
     )
 
 
@@ -102,6 +119,8 @@ def test_uses_keyword_overlap_when_categories_differ():
     question = make_question(
         text="How are administrative actions logged?",
         required_control="security_event_records",
+        response_kind=QuestionResponseKind.FREE_TEXT,
+        affirmative_polarity=None,
     )
     fact = make_fact(
         category="audit_logging",
@@ -120,6 +139,8 @@ def test_uses_low_score_risk_domain_fallback():
         text="Describe the control review process.",
         required_control="control_review",
         risk_domain="security",
+        response_kind=QuestionResponseKind.FREE_TEXT,
+        affirmative_polarity=None,
     )
     fact = make_fact(category="incident_response")
 
@@ -127,3 +148,13 @@ def test_uses_low_score_risk_domain_fallback():
 
     assert matches[0].relevance == 0.3
     assert "risk domain" in matches[0].reason
+
+
+def test_only_approved_facts_are_matchable():
+    for review_status in (
+        FactReviewStatus.CANDIDATE,
+        FactReviewStatus.REJECTED,
+        FactReviewStatus.SUPERSEDED,
+    ):
+        fact = make_fact(review_status=review_status)
+        assert match_question_to_facts(make_question(), [fact]) == []

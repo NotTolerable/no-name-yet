@@ -6,6 +6,70 @@ Verilly is an evidence-first Enterprise AI-Risk & Governance Pre-Flight Checker 
 
 Verilly is a pre-flight checker. It is not a compliance certification platform, legal adviser, auditor, or substitute for professional security and compliance review.
 
+## Target Architecture
+
+The following diagram describes Verilly's target architecture. It is a design direction, not a description of what is already implemented.
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                         Next.js UI                           │
+│                                                              │
+│ Projects · Documents · Fact Review · Questionnaire Review   │
+│ Results · Remediation · Export Approval · Run Progress       │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ HTTP / SSE
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│                        FastAPI API                           │
+│                                                              │
+│ Authentication · Request validation · Run endpoints          │
+│ Review endpoints · Result endpoints · Export endpoints       │
+└──────────────────────────────┬───────────────────────────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│                  Application / Workflow Layer                │
+│                         LangGraph                            │
+│                                                              │
+│ Ingest → Extract → Fact review → Map controls → Verify       │
+│ → Assess dependencies → Draft → Export review → Export       │
+│                                                              │
+│ Checkpointing · Resume · Retries · Progress · Interrupts      │
+└───────────────┬──────────────────────────────┬───────────────┘
+                │                              │
+                ▼                              ▼
+┌────────────────────────────┐    ┌────────────────────────────┐
+│ Deterministic Domain Kernel│    │       AI Service Layer     │
+│                            │    │                            │
+│ Pydantic domain models     │    │ LLM fact extraction        │
+│ Evidence eligibility       │    │ Question-control mapping   │
+│ Evidence matching          │    │ Bounded answer drafting    │
+│ Claim authorization        │    │                            │
+│ Dependency readiness       │    │ LangChain optional         │
+│ Remediation ordering       │    │ Direct SDK also acceptable │
+│ Citation validation        │    │ Pydantic structured output │
+└───────────────┬────────────┘    └──────────────┬─────────────┘
+                │                                │
+                └────────────────┬───────────────┘
+                                 ▼
+┌──────────────────────────────────────────────────────────────┐
+│                       Infrastructure                         │
+│                                                              │
+│ Supabase Postgres: durable business records                  │
+│ Supabase Storage: uploaded documents and exports             │
+│ LangGraph checkpointer: workflow execution checkpoints       │
+│ LangSmith/OpenTelemetry later: traces and evaluations        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Pydantic defines and validates the domain contracts. The deterministic domain kernel remains the final authority for evidence eligibility, dependency readiness, citations, and buyer-facing claim authorization. LangGraph coordinates resumability, retries, progress reporting, and human-review pauses; it does not make policy decisions. The AI service layer may extract candidate facts, propose question-to-control mappings, and draft bounded wording. LangChain is optional and may be used narrowly for model abstraction, structured output, prompts, and middleware.
+
+Supabase is intended to store durable business records and uploaded or generated files. LangGraph checkpoints execution state but must not replace those business records. LangSmith or OpenTelemetry may be introduced later for tracing and evaluation.
+
+The current implementation is substantially smaller: it uses deterministic regex extraction and matching, a synchronous local pipeline, a demo FastAPI API, a Next.js review UI, and optional Supabase PostgREST persistence. It does not yet include LangGraph, LangChain, LLM services, authentication, uploads, human-review workflows, a control dependency graph, export generation, Supabase Storage, or production observability.
+
+For detailed component boundaries, workflows, data ownership, and design invariants, see [docs/architecture.md](docs/architecture.md).
+
 ## Problem
 
 Enterprise questionnaires ask startups to make precise claims about controls such as tenant isolation, encryption, model training, prompt retention, audit logging, incident response, SOC 2, and HIPAA. Generic autofill tools can turn incomplete documentation into confident but unsupported claims, creating procurement, contractual, and security risk.
@@ -14,13 +78,13 @@ Enterprise questionnaires ask startups to make precise claims about controls suc
 
 Verilly runs a governed verification pipeline:
 
-- direct evidence produces a `SUPPORTED` answer with citations;
-- incomplete or weak evidence produces a qualified `PARTIAL` answer with citations;
+- strong direct evidence produces a `SUPPORTED` evidence status with citations;
+- incomplete, weak, neutral, or conflicting evidence produces a qualified `PARTIAL` status with citations;
 - missing evidence produces a `DEFICIT` refusal and a remediation task.
 
-The deterministic policy gate—not an LLM—decides whether a buyer-facing claim is allowed. Unsupported claims never become positive answers.
+Evidence status is distinct from answer meaning: a documented negative answer can be supported. The deterministic policy gate—not an LLM—decides whether a buyer-facing claim is allowed. Unsupported claims never become positive answers.
 
-## Architecture
+## Current Architecture
 
 ```text
 Sample technical docs
@@ -130,6 +194,7 @@ Frontend:
 cd frontend
 npm install
 npm run lint
+npx tsc --noEmit
 npm run build
 ```
 

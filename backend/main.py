@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from core.models import Question, TrustPacket
+from core.models import FactPolarity, Question, QuestionResponseKind, TrustPacket
 from core.fact_graph import (
     chunk_document,
     extract_facts_from_chunks,
@@ -52,24 +52,32 @@ DEMO_QUESTIONS = [
         question_text="Do you isolate customer data by tenant?",
         required_control="tenant_isolation",
         risk_domain="security",
+        response_kind=QuestionResponseKind.BINARY,
+        affirmative_polarity=FactPolarity.POSITIVE,
     ),
     Question(
         id="q-training",
         question_text="Do you use customer prompts for model training?",
         required_control="model_training",
         risk_domain="ai_governance",
+        response_kind=QuestionResponseKind.BINARY,
+        affirmative_polarity=FactPolarity.POSITIVE,
     ),
     Question(
         id="q-soc2",
         question_text="Are you SOC 2 Type II compliant?",
         required_control="soc2_type_ii",
         risk_domain="compliance",
+        response_kind=QuestionResponseKind.BINARY,
+        affirmative_polarity=FactPolarity.POSITIVE,
     ),
     Question(
         id="q-hipaa",
         question_text="Are you HIPAA compliant?",
         required_control="hipaa_compliance",
         risk_domain="compliance",
+        response_kind=QuestionResponseKind.BINARY,
+        affirmative_polarity=FactPolarity.POSITIVE,
     ),
 ]
 

@@ -1,83 +1,85 @@
 # Roadmap
 
-Planning is milestone-based. A milestone is complete only when its acceptance criteria and tests pass; PR boundaries may move as code review reveals risk.
+Planning is milestone-based. A milestone is complete only when its acceptance criteria and tests pass; PR boundaries may move as review reveals risk.
 
 ## Next milestone: Dependency-aware verification kernel
 
 ### Outcome
 
-Integrate the existing curated dependency graph into deterministic verification so a run reports direct evidence separately from readiness and produces prerequisite-aware remediation. Preserve all current answer protections.
+Represent direct evidence, questionnaire answer meaning, and future dependency readiness separately, then introduce a curated dependency graph without weakening the deterministic policy boundary.
 
 ### Proposed PRs
 
-#### PR 1 — Canonical control vocabulary and graph contract
+#### PR 1 — Separate evidence status, answer value, and readiness status
 
-- Define an explicit mapping from current question/fact labels to catalog IDs.
-- Return catalog/dependency version from loaders instead of discarding it.
-- Define behavior for unknown/unmapped controls and fail closed where readiness is requested.
-- Tighten graph API typing and deterministic ordering.
-
-Acceptance criteria:
-
-- Every demo control is mapped or explicitly classified as outside the catalog.
-- Graph version is available to downstream results.
-- Unknown IDs, duplicate catalog IDs/edges, self-edges, and cycles fail validation.
-- Mapping and graph output are deterministic.
-
-Tests: mapping table cases, version parsing, malformed data, all validator failures, stable ordering.
-
-#### PR 2 — Full control assessment orchestration
-
-- Build direct evidence statuses from existing policy decisions without changing answer authorization.
-- Evaluate required prerequisites in topological order.
-- Keep supporting dependencies explanatory and non-blocking.
-- Define missing-direct-evidence behavior for controls with and without blockers.
+- Define evidence, answer-value, readiness, polarity, review, applicability, and question-kind enums.
+- Require explicit binary/free-text metadata and binary orientation.
+- Allow only approved facts to authorize buyer-facing claims.
+- Derive answer value deterministically, including negative, conflicting, and explicitly non-applicable evidence.
+- Preserve the existing TrustPacket and frontend contract.
 
 Acceptance criteria:
 
-- Supported evidence plus ready required prerequisites yields `READY`.
-- Supported or partial evidence with an unmet required prerequisite yields `BLOCKED`.
+- A documented negative answer can be `SUPPORTED + NO`.
+- Missing binary evidence is `DEFICIT + UNKNOWN` with no citations.
+- Free-text decisions have no binary answer value.
+- Candidate, rejected, and superseded facts cannot authorize claims.
+- `NOT_APPLICABLE` requires approved, control-scoped evidence.
+- Conflicting approved polarity is `PARTIAL + UNKNOWN`.
+
+Tests: model validation, extraction metadata, approval eligibility, polarity/orientation, applicability scope, conflict handling, API compatibility, and existing refusal regressions.
+
+#### PR 2 — Versioned control catalog and dependency graph foundation
+
+- Add a small curated, versioned control catalog and required/supporting dependency data.
+- Load and validate unknown IDs, duplicates, self-edges, and cycles.
+- Add deterministic direct/transitive lookup and topological ordering.
+- Do not integrate readiness into buyer-facing policy yet.
+
+Acceptance criteria:
+
+- Catalog and graph versions are available downstream.
+- Invalid or cyclic graphs fail validation.
+- Lookup and ordering are deterministic; no edge is model-generated.
+
+Tests: version parsing, malformed data, validator failures, transitive dependencies, and stable ordering.
+
+#### PR 3 — Canonical mapping and control assessment orchestration
+
+- Map current question/fact labels to catalog IDs and fail closed for unknown controls.
+- Build direct evidence assessments from policy decisions.
+- Evaluate required prerequisites topologically; supporting edges remain non-blocking.
+
+Acceptance criteria:
+
+- Supported evidence plus ready prerequisites yields `READY`.
+- Unmet required prerequisites yield `BLOCKED` without changing evidence status.
 - Missing direct evidence never yields `READY` or a positive answer.
-- Identical inputs and graph version yield identical assessments.
 
-Tests: ready/incomplete/blocked matrices, transitive chains, supporting edges, missing assessments, regression tests for SOC 2/HIPAA and no-evidence refusal.
+Tests: mappings, readiness matrices, transitive chains, supporting edges, unknown controls, and policy regressions.
 
-#### PR 3 — Dependency-aware result and remediation
+#### PR 4 — Dependency-aware result and remediation
 
-- Add graph version and control assessments to the core verification result.
-- Generate one remediation task per deficient/incomplete control, identify blockers, and order prerequisites first.
-- Resolve question-oriented versus control-oriented remediation identity.
-- Keep answer text driven solely by existing policy decisions.
+- Add graph version and control assessments to the core result.
+- Generate one ordered remediation task per deficient control with blocker IDs.
+- Keep answer text driven only by direct-evidence policy.
 
-Acceptance criteria:
+Tests: result schema, ordering/deduplication, blocked-supported controls, API serialization, and end-to-end packets.
 
-- Results expose evidence status, readiness, citations, missing required dependencies, reasons, and graph version.
-- Prerequisite tasks precede dependent tasks with no duplicate control tasks.
-- A blocked supported control remains cited but is not described as ready.
-- Existing no-evidence answers remain unchanged.
+#### PR 5 — Persistence and review UI alignment
 
-Tests: result schema, task ordering/deduplication, blocked-supported scenario, API serialization, end-to-end regression packet.
+- Persist and reload versioned assessments without losing provenance.
+- Display evidence status separately from readiness and show blockers.
+- Keep the backend as the only decision authority.
 
-#### PR 4 — Persistence and review UI alignment
-
-- Persist and reload the versioned assessment/remediation result without losing identifiers.
-- Display evidence status separately from readiness and show prerequisite blockers.
-- Update frontend types and avoid browser-side compliance decisions.
-
-Acceptance criteria:
-
-- Save/load round trips retain graph version, assessments, fact references, control IDs, and blockers.
-- UI visually distinguishes evidence status from readiness and shows ordered remediation.
-- Backend remains the only decision authority.
-
-Tests: migration constraints, repository round trip, API contract, frontend lint/typecheck/build, focused rendering tests if a test framework is introduced separately.
+Tests: migration constraints, repository round trips, API contract, frontend lint/typecheck/build, and focused rendering tests if introduced separately.
 
 ### Milestone exit criteria
 
-- All four PR outcomes are integrated through the demo run.
-- Backend tests cover graph validation, canonical mapping, assessment matrices, invariant regressions, remediation ordering, API, and persistence.
+- All five PR outcomes are integrated through the demo run.
+- Backend tests cover domain validation, graph validation, mapping, assessment, invariant regressions, remediation, API, and persistence.
 - Frontend lint, TypeScript checking, and production build pass.
-- Documentation reflects the shipped result model and any accepted tradeoffs.
+- Documentation reflects the shipped result model.
 
 ## Later milestones
 
@@ -87,9 +89,8 @@ Introduce first-class citations and persist transient matching/policy decisions;
 
 ### Evaluation corpus
 
-Expand synthetic positive and negative fixtures, measure extraction/matching behavior, and establish regression thresholds before considering model-assisted extraction.
+Expand synthetic positive and negative fixtures and establish regression thresholds before considering model-assisted extraction.
 
 ### Production foundations
 
-Scope authentication, authorization, RLS, retention, transactionality, secure ingestion, and operational controls. This is required before real customer data, not part of the current MVP.
-
+Scope authentication, authorization, RLS, retention, transactionality, secure ingestion, and operational controls before using real customer data.

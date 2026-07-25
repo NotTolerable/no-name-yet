@@ -1,14 +1,14 @@
-# AGENTS.md — Proofline
+# AGENTS.md — Verilly
 
 ## Purpose
 
-Proofline is an evidence-first pre-flight checker for enterprise security and AI-governance questionnaires. The repository still uses the earlier name **Verilly** in code and UI; rename work is separate from behavior changes.
+Verilly is an evidence-first pre-flight checker for enterprise security and AI-governance questionnaires.
 
 Core rule:
 
 > No explicit evidence = no positive compliance claim.
 
-Proofline produces review artifacts, not certification, legal advice, audit assurance, or automated procurement approval.
+Verilly produces review artifacts, not certification, legal advice, audit assurance, or automated procurement approval.
 
 ## Read before changing
 
@@ -23,7 +23,7 @@ Proofline produces review artifacts, not certification, legal advice, audit assu
 
 The backend deterministically loads `.md`/`.txt` documents and JSON/CSV questionnaires, chunks documents, extracts narrow regex-based facts, matches evidence heuristically, applies a fail-closed policy gate, drafts answers only from cited facts, and creates remediation for deficits. FastAPI exposes synthetic demo endpoints. Next.js renders the demo and stores the latest packet in session storage. Supabase persistence is optional.
 
-A versioned, curated control catalog and acyclic dependency graph exist as standalone backend utilities. They are not invoked by `generate_trust_packet`; control assessments are not returned by the API, persisted, or displayed.
+There is currently no canonical control catalog, dependency graph, control-readiness assessment, or dependency-aware result. Those are target capabilities for the next milestone and must not be confused with the current Technical State Map of extracted facts.
 
 ## Engineering rules
 
@@ -53,4 +53,3 @@ npm run build
 ```
 
 On POSIX, activate the applicable virtual environment and run `python -m pytest`. Report every command not run or not passed. Do not claim external Supabase behavior was verified when only the in-memory adapter tests ran.
-

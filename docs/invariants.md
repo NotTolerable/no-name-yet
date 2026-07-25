@@ -2,18 +2,19 @@
 
 These rules are product safety properties, not implementation preferences.
 
-1. **No evidence, no positive claim.** `DEFICIT` answers contain no positive compliance or control assertion and no citations.
-2. **Cited evidence only.** Every factual statement in a `SUPPORTED` or `PARTIAL` answer comes from facts explicitly cited by the policy decision.
-3. **Traceable provenance.** Every cited fact resolves to a source chunk and document; identifiers remain stable for identical inputs.
-4. **Fail closed.** Missing, ambiguous, conflicting, ineligible, or untraceable evidence cannot produce a stronger result.
-5. **Evidence is not readiness.** Direct evidence status (`SUPPORTED`, `PARTIAL`, `DEFICIT`) and dependency readiness (`READY`, `INCOMPLETE`, `BLOCKED`) remain separate.
-6. **Dependencies do not create evidence.** A ready prerequisite cannot support a dependent control's direct claim. A supported dependent control may still be blocked.
-7. **Curated deterministic graph.** Control definitions and edges are human-curated, versioned, deterministic, and validated; no LLM creates or overrides edges.
-8. **Acyclic valid graph.** Unknown controls, self-edges, duplicate edges, and cycles are rejected before assessment.
-9. **Required versus supporting.** Missing required dependencies can block readiness. Supporting dependencies can explain risk but cannot automatically block it.
-10. **Deterministic remediation.** Prerequisite tasks precede dependent tasks, and at most one task exists per control in a result.
-11. **Policy boundary.** Wording, infrastructure, persistence, or future model output cannot override deterministic policy.
-12. **Review artifact only.** Outputs never imply certification, legal advice, audit assurance, production compliance, or automatic procurement approval.
+1. **No evidence, no positive claim.** Missing binary evidence is `DEFICIT + UNKNOWN`, with no citations or positive control assertion.
+2. **Approved evidence only.** Only `APPROVED` facts may authorize a buyer-facing claim. Candidate, rejected, and superseded facts are ineligible.
+3. **Cited evidence only.** Every factual statement in a `SUPPORTED` or `PARTIAL` answer comes from policy-cited approved facts.
+4. **Evidence is not answer meaning.** `SUPPORTED`, `PARTIAL`, and `DEFICIT` describe evidence; `YES`, `NO`, `UNKNOWN`, and `NOT_APPLICABLE` describe binary answer value. A documented `NO` may be supported.
+5. **Explicit question semantics.** Every question declares `BINARY` or `FREE_TEXT`. Binary questions declare which fact polarity maps to `YES`; missing metadata fails closed.
+6. **Free text is not binary.** Free-text questions have no affirmative polarity and no binary answer value.
+7. **Scoped non-applicability.** `NOT_APPLICABLE` requires approved, explicit evidence scoped to the same canonical control. Missing evidence and unrelated clauses cannot establish it.
+8. **Fail closed on conflict.** Conflicting approved positive and negative evidence produces `PARTIAL + UNKNOWN`, not an unqualified answer.
+9. **Traceable provenance.** Every cited fact resolves to a source chunk and document; stable identifiers do not change for identical inputs.
+10. **Evidence is not readiness.** Direct evidence and answer value remain separate from dependency readiness (`READY`, `INCOMPLETE`, `BLOCKED`).
+11. **Dependencies do not create evidence.** Future prerequisites may block readiness but cannot authorize or strengthen a direct claim.
+12. **Curated deterministic graph.** Future dependency edges are human-curated, versioned, acyclic, and never generated or overridden by an LLM.
+13. **Policy boundary.** Wording, infrastructure, persistence, or future model output cannot override deterministic policy.
+14. **Review artifact only.** Outputs never imply certification, legal advice, audit assurance, production compliance, or automatic procurement approval.
 
-Any change to these invariants requires explicit product review, an ADR update or replacement, and negative-case regression tests.
-
+Changing these invariants requires explicit product review, documentation updates, and negative-case regression tests.

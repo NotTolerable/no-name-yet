@@ -1,5 +1,12 @@
 from core.deficit_generator import generate_remediation_task
-from core.models import PolicyDecision, PolicyStatus, Question
+from core.models import (
+    AnswerValue,
+    FactPolarity,
+    PolicyDecision,
+    PolicyStatus,
+    Question,
+    QuestionResponseKind,
+)
 
 
 def make_soc2_question():
@@ -8,6 +15,8 @@ def make_soc2_question():
         question_text="Are you SOC 2 Type II compliant?",
         required_control="soc2_type_ii",
         risk_domain="compliance",
+        response_kind=QuestionResponseKind.BINARY,
+        affirmative_polarity=FactPolarity.POSITIVE,
     )
 
 
@@ -15,8 +24,14 @@ def make_decision(status=PolicyStatus.DEFICIT):
     return PolicyDecision(
         question_id="q-soc2",
         status=status,
+        answer_value=(
+            AnswerValue.UNKNOWN
+            if status is PolicyStatus.DEFICIT
+            else AnswerValue.YES
+        ),
+        response_kind=QuestionResponseKind.BINARY,
         reason="No explicit SOC 2 Type II evidence was found.",
-        cited_fact_ids=[],
+        cited_fact_ids=[] if status is PolicyStatus.DEFICIT else ["fact-soc2"],
     )
 
 

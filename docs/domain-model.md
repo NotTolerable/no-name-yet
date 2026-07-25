@@ -6,40 +6,44 @@
 |---|---|---|
 | `Document` | Raw local text source | Owns ordered `DocumentChunk`s |
 | `DocumentChunk` | Traceable blank-line section | References one document |
-| `Fact` | Regex-detected documented statement | References one chunk; carries quote, category, confidence |
-| `Question` | Buyer requirement | Names a free-form required control and risk domain |
-| `EvidenceMatch` | Ranked candidate link | Joins one question to one fact |
-| `PolicyDecision` | Direct-evidence authorization | One question; status and cited fact IDs |
-| `Answer` | Buyer-facing rendering | One question; policy status, text, quote citations |
-| `RemediationTask` | Follow-up for a deficit | One question; optional control and blocker IDs |
+| `Fact` | Documented proposition | References one chunk; has category, confidence, polarity, review status, and applicability |
+| `Question` | Buyer requirement | Names a control, response kind, and explicit binary orientation when applicable |
+| `EvidenceMatch` | Ranked candidate link | Joins one question to one approved fact |
+| `PolicyDecision` | Internal direct-evidence assessment | Evidence status, answer value, response kind, cited fact IDs, and reason |
+| `Answer` | Buyer-facing rendering | Retains the external `status`, text, citations, and policy reason contract |
+| `RemediationTask` | Follow-up for a deficit | One question; title, description, severity, owner |
 | `TrustPacket` | Current run result | Answers, tasks, summary only |
-| `ControlDefinition` | Canonical catalog entry | Identified by control ID |
-| `ControlDependency` | Directed prerequisite edge | Control depends on another control; required or supporting |
-| `ControlAssessment` | Evidence plus readiness result | One control; cited facts and missing required dependencies |
 
-`PolicyStatus` is currently reused as `ControlAssessment.evidence_status`. `ReadinessStatus` is independently `READY`, `INCOMPLETE`, or `BLOCKED`.
+## Domain values
 
-## Relationship rules
+- `EvidenceStatus`: `SUPPORTED`, `PARTIAL`, `DEFICIT` describes evidence quality, not whether an answer is affirmative.
+- `AnswerValue`: `YES`, `NO`, `UNKNOWN`, `NOT_APPLICABLE` describes a binary answer's meaning.
+- `ReadinessStatus`: `READY`, `INCOMPLETE`, `BLOCKED` is reserved for future dependency assessment and is not part of policy or answers yet.
+- `FactPolarity`: `POSITIVE`, `NEGATIVE`, `NEUTRAL` is relative to the canonical proposition represented by the fact category.
+- `FactReviewStatus`: `CANDIDATE`, `APPROVED`, `REJECTED`, `SUPERSEDED` governs authorization. Only approved facts are usable.
+- `FactApplicability`: `APPLICABLE`, `NOT_APPLICABLE`, `UNSPECIFIED` records explicit control-scoped applicability.
+- `QuestionResponseKind`: `BINARY`, `FREE_TEXT` is required on every question.
 
-- A fact belongs to exactly one source chunk; a chunk belongs to one document.
-- An evidence match never itself authorizes an answer.
-- A policy decision may cite facts; answer generation accepts only those cited facts.
-- A control dependency points from the dependent control to its prerequisite.
-- Only required dependencies block readiness.
-- Graph utilities and questionnaire processing currently form separate models.
+Binary questions require `affirmative_polarity` (`POSITIVE` or `NEGATIVE`), which declares which fact polarity maps to `YES`. Free-text questions require `affirmative_polarity=None` and their policy decision has `answer_value=None`. Missing metadata fails validation; wording is never used to guess question kind or orientation.
 
-## Known modeling gaps
+## Policy semantics
 
-- No explicit `Run` or verification-result model exists in core; persistence adds run identity externally.
-- No canonical mapping connects free-form question/fact labels to catalog control IDs.
-- No first-class Technical State Map aggregate exists despite the architectural name.
-- Evidence matches and policy decisions are transient and absent from `TrustPacket` and persistence.
-- API citations are strings rather than citation objects containing fact/chunk/document IDs.
-- Graph/catalog version is loaded but discarded from domain results.
-- Control assessments are not computed as a complete, topologically evaluated set.
-- Remediation identity is ambiguous between question and control; persistence enforces question uniqueness.
-- There is no representation for conflicting, stale, superseded, or negatively asserted facts.
-- Confidence is a fixed extraction value in current behavior, not calibrated evidence quality.
+- The trusted deterministic extractor explicitly emits `APPROVED`; future untrusted extractors must not inherit approval.
+- Candidate, rejected, and superseded facts cannot match, support policy, or reach buyer-facing wording.
+- Approved negative evidence may produce `SUPPORTED + NO`.
+- Missing binary evidence produces `DEFICIT + UNKNOWN` without citations.
+- Conflicting approved positive and negative evidence produces `PARTIAL + UNKNOWN`.
+- `NOT_APPLICABLE` requires an approved fact whose canonical category matches the question and whose typed applicability is explicitly `NOT_APPLICABLE`.
+- Evidence status and answer value remain separate from future readiness.
 
-The next milestone should close only the gaps required for dependency-aware verification; it should not broaden ingestion or compliance scope.
+`PolicyStatus` remains a temporary alias for `EvidenceStatus`, and external `Answer.status` is unchanged. Answer value is intentionally not persisted or exposed in the current TrustPacket.
 
+## Known gaps
+
+- No canonical control catalog, dependency graph, or control assessment exists yet.
+- Fact applicability and review status are not persisted; current runs reconstruct facts through the deterministic extractor.
+- Evidence matches and policy decisions are transient and absent from TrustPacket persistence.
+- API citations are quote strings rather than first-class provenance objects.
+- No first-class Technical State Map aggregate exists.
+- Remediation remains question-oriented.
+- Confidence is fixed rule output rather than calibrated evidence quality.

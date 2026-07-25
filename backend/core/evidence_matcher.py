@@ -2,7 +2,7 @@
 
 import re
 
-from core.models import EvidenceMatch, Fact, Question
+from core.models import EvidenceMatch, Fact, FactReviewStatus, Question
 
 
 CATEGORY_ALIASES = {
@@ -66,7 +66,7 @@ def _normalize_label(value: str) -> str:
     return "_".join(re.findall(r"[a-z0-9]+", value.lower()))
 
 
-def _canonical_category(value: str) -> str:
+def canonical_category(value: str) -> str:
     normalized = _normalize_label(value)
     return CATEGORY_ALIASES.get(normalized, normalized)
 
@@ -99,7 +99,10 @@ def match_question_to_facts(
     context from diluting an available direct control match.
     """
 
-    required_category = _canonical_category(question.required_control)
+    approved_facts = [
+        fact for fact in facts if fact.review_status is FactReviewStatus.APPROVED
+    ]
+    required_category = canonical_category(question.required_control)
 
     direct_matches = [
         _make_match(
@@ -111,8 +114,8 @@ def match_question_to_facts(
                 f"control ({question.required_control})."
             ),
         )
-        for fact in facts
-        if _canonical_category(fact.category) == required_category
+        for fact in approved_facts
+        if canonical_category(fact.category) == required_category
     ]
     if direct_matches:
         return direct_matches
@@ -124,7 +127,7 @@ def match_question_to_facts(
         f"{question.required_control} {question.question_text}"
     )
     keyword_matches: list[EvidenceMatch] = []
-    for fact in facts:
+    for fact in approved_facts:
         fact_keywords = _keywords(
             f"{fact.category} {fact.claim} {fact.evidence_quote}"
         )
@@ -160,7 +163,7 @@ def match_question_to_facts(
                 "risk domain, but does not directly match the required control."
             ),
         )
-        for fact in facts
-        if _canonical_category(fact.category) in eligible_categories
+        for fact in approved_facts
+        if canonical_category(fact.category) in eligible_categories
     ]
     return sorted(domain_matches, key=lambda match: match.fact_id)
