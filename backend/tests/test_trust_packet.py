@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from core.models import PolicyStatus, TrustPacket
 from core.trust_packet import generate_trust_packet
@@ -27,18 +28,24 @@ Customer prompts are not used for model training.
                         "question_text": "Do you isolate customer data by tenant?",
                         "required_control": "tenant_isolation",
                         "risk_domain": "security",
+                        "response_kind": "BINARY",
+                        "affirmative_polarity": "POSITIVE",
                     },
                     {
                         "id": "q-training",
                         "question_text": "Do you use customer prompts for model training?",
                         "required_control": "model_training",
                         "risk_domain": "ai_governance",
+                        "response_kind": "BINARY",
+                        "affirmative_polarity": "POSITIVE",
                     },
                     {
                         "id": "q-soc2",
                         "question_text": "Are you SOC 2 Type II compliant?",
                         "required_control": "soc2_type_ii",
                         "risk_domain": "compliance",
+                        "response_kind": "BINARY",
+                        "affirmative_polarity": "POSITIVE",
                     },
                 ]
             }
@@ -120,3 +127,30 @@ def test_remediation_tasks_exist_for_deficits(tmp_path):
     }
 
     assert {task.question_id for task in packet.remediation_tasks} == deficit_ids
+
+
+def test_questionnaire_rejects_missing_response_metadata(tmp_path):
+    docs_path = tmp_path / "docs"
+    docs_path.mkdir()
+    (docs_path / "architecture.md").write_text(
+        "Customer data is encrypted at rest.", encoding="utf-8"
+    )
+    questionnaire_path = tmp_path / "invalid-questionnaire.json"
+    questionnaire_path.write_text(
+        json.dumps(
+            {
+                "questions": [
+                    {
+                        "id": "q-missing-metadata",
+                        "question_text": "Is customer data encrypted at rest?",
+                        "required_control": "encryption_at_rest",
+                        "risk_domain": "security",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Invalid questionnaire item"):
+        generate_trust_packet(str(docs_path), str(questionnaire_path))

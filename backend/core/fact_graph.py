@@ -5,7 +5,14 @@ from hashlib import sha256
 from pathlib import Path
 import re
 
-from core.models import Document, DocumentChunk, Fact
+from core.models import (
+    Document,
+    DocumentChunk,
+    Fact,
+    FactApplicability,
+    FactPolarity,
+    FactReviewStatus,
+)
 
 
 SUPPORTED_DOCUMENT_SUFFIXES = {".md", ".txt"}
@@ -58,6 +65,184 @@ FACT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         re.compile(r"\bprompt[\s_-]+injection\b", re.IGNORECASE),
     ),
 )
+
+# Polarity is relative to each category's canonical proposition. These narrow,
+# category-specific rules intentionally avoid treating every grammatical "not"
+# as evidence that the proposition is false.
+NEGATIVE_POLARITY_PATTERNS: dict[str, re.Pattern[str]] = {
+    "tenant_isolation": re.compile(
+        r"\b(?:tenant[\s_-]+isolation\s+(?:is\s+)?not|"
+        r"not\s+(?:isolated|scoped)\b[^.]*\btenant)", re.IGNORECASE
+    ),
+    "encryption": re.compile(
+        r"\b(?:is|are|was|were)\s+not\s+encrypted\b|\bno\s+encryption\b",
+        re.IGNORECASE,
+    ),
+    "model_training": re.compile(
+        r"\b(?:not|never)\s+(?:used\s+)?(?:for\s+)?model\s+training\b|"
+        r"\bdo(?:es)?\s+not\s+[^.]*\btrain\b[^.]*\bmodels?\b",
+        re.IGNORECASE,
+    ),
+    "prompt_retention": re.compile(
+        r"\bprompts?\s+(?:are\s+)?not\s+(?:retained|stored)\b|"
+        r"\bdo(?:es)?\s+not\s+(?:retain|store)\s+prompts?\b",
+        re.IGNORECASE,
+    ),
+    "audit_logging": re.compile(
+        r"\bno\s+audit\s+logs?\b|\baudit\s+logging\s+(?:is\s+)?not\b",
+        re.IGNORECASE,
+    ),
+    "admin_access": re.compile(
+        r"\bno\s+(?:admin(?:istrative)?|privileged)\s+access\b",
+        re.IGNORECASE,
+    ),
+    "incident_response": re.compile(
+        r"\bno\s+incident[\s_-]+response\s+(?:plan|policy|process)\b|"
+        r"\bincident[\s_-]+response\s+(?:is\s+)?not\s+(?:defined|documented)",
+        re.IGNORECASE,
+    ),
+    "soc2": re.compile(
+        r"\b(?:not|never)\s+(?:completed|certified|compliant)\b[^.]*\bsoc\s*2\b|"
+        r"\bsoc\s*2\b[^.]*\b(?:not\s+(?:completed|certified|compliant)|no\s+report)\b",
+        re.IGNORECASE,
+    ),
+    "hipaa": re.compile(
+        r"\bnot\s+hipaa\s+(?:compliant|certified)\b|"
+        r"\bhipaa\s+compliance\s+(?:is\s+)?not\s+(?:established|documented)",
+        re.IGNORECASE,
+    ),
+    "prompt_injection_testing": re.compile(
+        r"\bdo(?:es)?\s+not\s+(?:perform|conduct|run)\s+prompt[\s_-]+injection\b|"
+        r"\bno\s+prompt[\s_-]+injection\s+testing\b",
+        re.IGNORECASE,
+    ),
+}
+
+POSITIVE_POLARITY_PATTERNS: dict[str, re.Pattern[str]] = {
+    "tenant_isolation": re.compile(
+        r"\b(?:tenant[\s_-]+isolation|tenant[\s_-]*id|"
+        r"scop(?:e|ed|ing)\b[^.]*\btenant)\b", re.IGNORECASE
+    ),
+    "encryption": re.compile(r"\bencrypt(?:ed|ion|ing)?\b", re.IGNORECASE),
+    "model_training": re.compile(
+        r"\b(?:used\s+for\s+model\s+training|train(?:ed|ing)?\b[^.]*\bmodel)",
+        re.IGNORECASE,
+    ),
+    "prompt_retention": re.compile(
+        r"\bprompts?\s+(?:are\s+)?(?:retained|stored)\b|"
+        r"\b(?:retain|store)\s+prompts?\b",
+        re.IGNORECASE,
+    ),
+    "audit_logging": re.compile(
+        r"\b(?:record(?:ed|s)?|writ(?:e|ten)|produce[sd]?)\b[^.]*\baudit\s+logs?\b|"
+        r"\baudit\s+logging\s+(?:is\s+)?(?:enabled|implemented)",
+        re.IGNORECASE,
+    ),
+    "admin_access": re.compile(
+        r"\b(?:admin(?:istrative)?|privileged)\s+access\b[^.]*\b"
+        r"(?:approval|restrict(?:ed|ion)?|require[sd]?)\b",
+        re.IGNORECASE,
+    ),
+    "incident_response": re.compile(
+        r"\bincident[\s_-]+response\s+(?:plan|policy|process)\b",
+        re.IGNORECASE,
+    ),
+    "soc2": re.compile(
+        r"\b(?:completed|certified|compliant)\b[^.]*\bsoc\s*2\b|"
+        r"\bsoc\s*2\b[^.]*\b(?:report\s+is\s+available|certified|compliant)",
+        re.IGNORECASE,
+    ),
+    "hipaa": re.compile(
+        r"\bhipaa\s+(?:compliant|compliance\s+(?:is\s+)?documented)\b",
+        re.IGNORECASE,
+    ),
+    "prompt_injection_testing": re.compile(
+        r"\b(?:perform(?:s|ed)?|conduct(?:s|ed)?|run[ns]?)\b[^.]*"
+        r"\bprompt[\s_-]+injection\s+test(?:ing|s)?\b|"
+        r"\bprompt[\s_-]+injection\s+testing\s+(?:is\s+)?performed\b",
+        re.IGNORECASE,
+    ),
+}
+
+# Non-applicability must explicitly use the category's canonical proposition as
+# its subject. A generic "not applicable" elsewhere in the sentence is not
+# enough to mark the extracted control fact as not applicable.
+NOT_APPLICABLE_PATTERNS: dict[str, re.Pattern[str]] = {
+    "tenant_isolation": re.compile(
+        r"\btenant(?:[\s_-]+data)?[\s_-]+(?:isolation|scoping)\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "encryption": re.compile(
+        r"\bencryption(?:\s+at\s+rest)?\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "model_training": re.compile(
+        r"\bmodel\s+training\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "prompt_retention": re.compile(
+        r"\bprompt\s+retention\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "audit_logging": re.compile(
+        r"\baudit\s+logging\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "admin_access": re.compile(
+        r"\b(?:administrative|privileged)\s+access\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "incident_response": re.compile(
+        r"\bincident\s+response\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "soc2": re.compile(
+        r"\bsoc\s*2(?:\s+type\s+(?:i{1,2}|[12]))?\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "hipaa": re.compile(
+        r"\bhipaa(?:\s+compliance)?\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+    "prompt_injection_testing": re.compile(
+        r"\bprompt[\s_-]+injection\s+testing\s+"
+        r"(?:(?:is\s+)?not\s+applicable|does\s+not\s+apply)\b",
+        re.IGNORECASE,
+    ),
+}
+
+
+def _fact_polarity(category: str, text: str) -> FactPolarity:
+    applicability_pattern = NOT_APPLICABLE_PATTERNS.get(category)
+    if applicability_pattern is not None and applicability_pattern.search(text):
+        return FactPolarity.NEUTRAL
+    negative_pattern = NEGATIVE_POLARITY_PATTERNS.get(category)
+    if negative_pattern is not None and negative_pattern.search(text):
+        return FactPolarity.NEGATIVE
+    positive_pattern = POSITIVE_POLARITY_PATTERNS.get(category)
+    if positive_pattern is not None and positive_pattern.search(text):
+        return FactPolarity.POSITIVE
+    return FactPolarity.NEUTRAL
+
+
+def _fact_applicability(
+    category: str, text: str, polarity: FactPolarity
+) -> FactApplicability:
+    pattern = NOT_APPLICABLE_PATTERNS.get(category)
+    if pattern is not None and pattern.search(text):
+        return FactApplicability.NOT_APPLICABLE
+    if polarity is FactPolarity.NEUTRAL:
+        return FactApplicability.UNSPECIFIED
+    return FactApplicability.APPLICABLE
 
 
 def _stable_id(prefix: str, *parts: object) -> str:
@@ -138,6 +323,7 @@ def extract_facts_from_chunks(chunks: list[DocumentChunk]) -> list[Fact]:
                     continue
                 seen.add(identity)
 
+                polarity = _fact_polarity(category, evidence_quote)
                 facts.append(
                     Fact(
                         id=_stable_id("fact", *identity),
@@ -149,6 +335,13 @@ def extract_facts_from_chunks(chunks: list[DocumentChunk]) -> list[Fact]:
                         source_document=_source_document(chunk),
                         source_chunk_id=chunk.id,
                         confidence=0.9,
+                        polarity=polarity,
+                        # This extractor is curated and deterministic. Future
+                        # untrusted/model extractors must emit CANDIDATE instead.
+                        review_status=FactReviewStatus.APPROVED,
+                        applicability=_fact_applicability(
+                            category, evidence_quote, polarity
+                        ),
                     )
                 )
 

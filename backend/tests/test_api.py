@@ -20,6 +20,13 @@ def test_demo_run_returns_trust_packet():
     packet = response.json()
     assert set(packet) == {"answers", "remediation_tasks", "summary"}
     assert len(packet["answers"]) == 4
+    assert set(packet["answers"][0]) == {
+        "question_id",
+        "status",
+        "answer_text",
+        "citations",
+        "policy_reason",
+    }
 
 
 def test_demo_run_contains_supported_and_deficit_items():
@@ -48,7 +55,10 @@ def test_demo_fixture_endpoints():
 
     assert questionnaire_response.status_code == 200
     assert docs_response.status_code == 200
-    assert any(item["id"] == "q-soc2" for item in questionnaire_response.json())
+    questionnaire = questionnaire_response.json()
+    assert any(item["id"] == "q-soc2" for item in questionnaire)
+    assert all(item["response_kind"] == "BINARY" for item in questionnaire)
+    assert all(item["affirmative_polarity"] == "POSITIVE" for item in questionnaire)
     assert {item["file_name"] for item in docs_response.json()} == {
         "ai-policy.txt",
         "architecture.md",

@@ -1,7 +1,17 @@
 import pytest
 
 from core.answer_generator import generate_answer
-from core.models import Fact, PolicyDecision, PolicyStatus, Question
+from core.models import (
+    AnswerValue,
+    Fact,
+    FactApplicability,
+    FactPolarity,
+    FactReviewStatus,
+    PolicyDecision,
+    PolicyStatus,
+    Question,
+    QuestionResponseKind,
+)
 
 
 def make_question():
@@ -10,6 +20,8 @@ def make_question():
         question_text="Is customer data encrypted at rest?",
         required_control="encryption_at_rest",
         risk_domain="security",
+        response_kind=QuestionResponseKind.BINARY,
+        affirmative_polarity=FactPolarity.POSITIVE,
     )
 
 
@@ -27,6 +39,9 @@ def make_fact(
         source_document="security.md",
         source_chunk_id="chunk-1",
         confidence=0.95,
+        polarity=FactPolarity.POSITIVE,
+        review_status=FactReviewStatus.APPROVED,
+        applicability=FactApplicability.APPLICABLE,
     )
 
 
@@ -34,6 +49,12 @@ def make_decision(status, cited_fact_ids=None):
     return PolicyDecision(
         question_id="q-1",
         status=status,
+        answer_value=(
+            AnswerValue.UNKNOWN
+            if status is PolicyStatus.DEFICIT
+            else AnswerValue.YES
+        ),
+        response_kind=QuestionResponseKind.BINARY,
         reason="Deterministic policy evaluation completed.",
         cited_fact_ids=cited_fact_ids or [],
     )
@@ -105,4 +126,17 @@ def test_supported_answer_fails_closed_without_cited_fact():
             make_question(),
             make_decision(PolicyStatus.SUPPORTED, ["missing-fact"]),
             [],
+        )
+
+
+def test_non_approved_fact_cannot_reach_buyer_facing_answer():
+    fact = make_fact().model_copy(
+        update={"review_status": FactReviewStatus.CANDIDATE}
+    )
+
+    with pytest.raises(ValueError, match="requires at least one policy-cited fact"):
+        generate_answer(
+            make_question(),
+            make_decision(PolicyStatus.SUPPORTED, [fact.id]),
+            [fact],
         )

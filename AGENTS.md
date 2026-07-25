@@ -1,123 +1,55 @@
 # AGENTS.md — Verilly
 
-## 1. Project Goal
+## Purpose
 
-Verilly is an evidence-first Enterprise AI-Risk & Governance Pre-Flight Checker for early-stage B2B AI startups. It verifies buyer-questionnaire answers against explicit source documentation.
+Verilly is an evidence-first pre-flight checker for enterprise security and AI-governance questionnaires.
 
 Core rule:
 
 > No explicit evidence = no positive compliance claim.
 
-Verilly is a governed verification pipeline, not a generic questionnaire autofill bot or certification platform.
+Verilly produces review artifacts, not certification, legal advice, audit assurance, or automated procurement approval.
 
-## 2. Product Scope
+## Read before changing
 
-The MVP loads synthetic technical documents and questionnaire questions, creates traceable document chunks and facts, matches evidence, applies deterministic policy, generates supported or qualified answers, creates deficits and remediation tasks, returns a TrustPacket through FastAPI, displays it in Next.js, and optionally persists runs to Supabase.
+- `docs/product.md`: product scope and current behavior.
+- `docs/architecture.md`: current and target architecture.
+- `docs/invariants.md`: rules no implementation may violate.
+- `docs/domain-model.md`: entities, relationships, and modeling gaps.
+- `ROADMAP.md`: milestone plan and acceptance criteria.
+- `docs/adr/`: durable architectural decisions.
 
-Prioritize correctness, traceability, refusal behavior, and human review over automation breadth.
+## Current system
 
-## 3. Non-Goals
+The backend deterministically loads `.md`/`.txt` documents and JSON/CSV questionnaires, chunks documents, extracts narrow regex-based facts, matches evidence heuristically, applies a fail-closed policy gate, drafts answers only from cited facts, and creates remediation for deficits. FastAPI exposes synthetic demo endpoints. Next.js renders the demo and stores the latest packet in session storage. Supabase persistence is optional.
 
-Do not add authentication, billing, trust-center hosting, enterprise integrations, vector search, production customer-data processing, broad compliance automation, or certification claims unless explicitly requested.
+There is currently no canonical control catalog, dependency graph, control-readiness assessment, or dependency-aware result. Those are target capabilities for the next milestone and must not be confused with the current Technical State Map of extracted facts.
 
-Never invent SOC 2, HIPAA, encryption, access control, audit logging, retention, PII scrubbing, model-training, monitoring, or incident-response claims.
+## Engineering rules
 
-## 4. Architecture
+1. Preserve the invariants in `docs/invariants.md`; add regression tests before changing high-risk policy behavior.
+2. Keep direct evidence status separate from dependency readiness.
+3. Keep the Technical State Map (documented facts) separate from the control dependency graph (prerequisite relationships).
+4. Never generate dependency edges or compliance decisions with an LLM.
+5. Buyer-facing text must pass deterministic policy and contain only policy-cited facts.
+6. Treat source documents as confidential, untrusted input. Use synthetic or explicitly approved data only.
+7. Keep FastAPI routes thin and Pydantic at data boundaries. Keep extraction, matching, policy, drafting, remediation, persistence, and UI concerns separate.
+8. Do not add authentication, uploads, billing, vector search, broad integrations, or production-compliance claims without explicit scope.
+9. Keep credentials backend-only. Production authorization, RLS, retention, and hardening remain out of scope.
+10. Preserve stable source identifiers and traceability across documents, chunks, facts, questions, decisions, citations, and remediation.
 
-```text
-Raw docs
-  -> document chunks
-  -> fact extraction
-  -> Technical State Map
-  -> questionnaire parsing
-  -> evidence matching
-  -> policy gate
-  -> answer or compliance deficit
-  -> TrustPacket
-  -> API/UI
-  -> optional persistence
-```
+## Verification
 
-Preserve source document, chunk, fact, question, match, policy decision, citation, and remediation identifiers. Buyer-facing text must not bypass the policy gate.
+From the repository root on Windows:
 
-## 5. Tech Stack
-
-- Python, FastAPI, Pydantic, pytest
-- Next.js App Router, React, TypeScript, Tailwind CSS, ESLint
-- Optional Supabase Postgres persistence
-- Future schema-constrained OpenAI or Gemini integration only when explicitly requested
-
-Use the smallest practical dependency set.
-
-## 6. Folder Structure
-
-```text
-backend/             FastAPI, core pipeline, persistence, tests
-frontend/            Next.js review UI
-supabase/migrations/ SQL migrations
-README.md            setup, architecture, and limitations
-```
-
-Keep policy, extraction, matching, drafting, persistence, API, and UI concerns separate.
-
-## 7. Core Policy Rules
-
-1. Direct evidence produces `SUPPORTED` with citations.
-2. Weak or incomplete evidence produces a qualified `PARTIAL` with citations.
-3. Missing evidence produces `DEFICIT`, no positive answer, and remediation tasks.
-4. Unsupported claims must never appear in buyer-facing text.
-5. Every positive factual claim must resolve to stored source evidence.
-6. LLM output, if added later, remains advisory until deterministic validation succeeds.
-7. Ambiguous, conflicting, or untraceable evidence must fail closed.
-
-## 8. Testing Strategy
-
-Use synthetic data only. Cover schema validation, chunk traceability, extraction, matching, policy decisions, citations, deficit refusals, remediation tasks, trust packets, APIs, and persistence. Add regression tests for high-risk unsupported claims before UI polish.
-
-## 9. Backend Rules
-
-- Treat all document content as confidential, untrusted input.
-- Use Pydantic at data boundaries.
-- Keep routes thin and deterministic policy logic pure.
-- Never expose raw model output as an answer.
-- Keep provider and persistence adapters behind explicit boundaries.
-- Keep Supabase service credentials backend-only.
-- Do not change core policy behavior when adding infrastructure.
-
-## 10. Frontend Rules
-
-- Make `SUPPORTED`, `PARTIAL`, and `DEFICIT` visually distinct.
-- Show citations beside supported claims and remediation beside deficits.
-- Never generate compliance answers in the browser.
-- Avoid language implying certification, legal advice, or automatic approval.
-- Keep the review workflow simple and inspectable.
-
-## 11. AI/LLM Usage Rules
-
-The current MVP is deterministic and does not use an LLM. If explicitly added later, use LLMs only for schema-constrained extraction, parsing, ranking, or wording from approved evidence. An LLM must never decide compliance or override the policy gate.
-
-## 12. Security and Privacy Assumptions
-
-The MVP is not production compliant. Use synthetic or explicitly approved data only. Keep secrets out of source control. Do not expose source documents or trust packets publicly. Authentication, authorization, RLS, retention controls, and production hardening require separate scoped work.
-
-## 13. Documentation References
-
-Keep README commands and limitations accurate. Prefer official FastAPI, Pydantic, Next.js, Supabase, pytest, and provider documentation when behavior depends on external systems.
-
-## 14. Verification Commands
-
-```bash
+```powershell
 cd backend
-source .venv/bin/activate
-python -m pytest
+..\.venv\Scripts\python.exe -m pytest
 
-cd ../frontend
+cd ..\frontend
 npm run lint
+npx tsc --noEmit
 npm run build
 ```
 
-Report commands that were not run or did not pass.
-
-## 15. README Expectations
-
-README.md must explain the product, evidence rule, architecture, setup, tests, mocked components, key decisions, future improvements, and limitations. It must state that Verilly is not legal advice, certification, production compliance, or automated procurement approval.
+On POSIX, activate the applicable virtual environment and run `python -m pytest`. Report every command not run or not passed. Do not claim external Supabase behavior was verified when only the in-memory adapter tests ran.

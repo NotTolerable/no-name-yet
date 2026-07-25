@@ -5,7 +5,7 @@ from core.fact_graph import (
     extract_facts_from_chunks,
     load_documents_from_directory,
 )
-from core.models import Question
+from core.models import FactPolarity, Question, QuestionResponseKind
 from core.trust_packet import generate_trust_packet
 from database import RunRepository
 
@@ -50,12 +50,16 @@ def build_run_inputs(tmp_path):
             question_text="Do you isolate customer data by tenant?",
             required_control="tenant_isolation",
             risk_domain="security",
+            response_kind=QuestionResponseKind.BINARY,
+            affirmative_polarity=FactPolarity.POSITIVE,
         ),
         Question(
             id="q-soc2",
             question_text="Are you SOC 2 Type II compliant?",
             required_control="soc2_type_ii",
             risk_domain="compliance",
+            response_kind=QuestionResponseKind.BINARY,
+            affirmative_polarity=FactPolarity.POSITIVE,
         ),
     ]
     questionnaire_path = tmp_path / "questions.json"

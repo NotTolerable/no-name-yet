@@ -31,7 +31,7 @@ def generate_remediation_task(
 
     if policy_decision.question_id != question.id:
         raise ValueError("Policy decision does not belong to this question")
-    if policy_decision.status is not PolicyStatus.DEFICIT:
+    if policy_decision.evidence_status is not PolicyStatus.DEFICIT:
         return None
 
     control_name = _control_name(question.required_control)

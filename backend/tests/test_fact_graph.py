@@ -3,6 +3,7 @@ from core.fact_graph import (
     extract_facts_from_chunks,
     load_documents_from_directory,
 )
+from core.models import FactApplicability, FactPolarity, FactReviewStatus
 
 
 def write_sample_documents(tmp_path):
@@ -65,6 +66,7 @@ def test_extracts_model_training_fact(tmp_path):
     training_fact = next(fact for fact in facts if fact.category == "model_training")
     assert training_fact.claim == "Customer prompts are not used for model training."
     assert training_fact.evidence_quote == training_fact.claim
+    assert training_fact.polarity is FactPolarity.NEGATIVE
 
 
 def test_does_not_extract_soc2_when_missing(tmp_path):
@@ -86,6 +88,7 @@ def test_each_fact_has_source_evidence(tmp_path):
         assert fact.source_chunk_id in chunks_by_id
         assert fact.evidence_quote in chunks_by_id[fact.source_chunk_id].text
         assert 0.0 <= fact.confidence <= 1.0
+        assert fact.review_status is FactReviewStatus.APPROVED
 
 
 def test_recognizes_each_supported_fact_category(tmp_path):
@@ -119,3 +122,47 @@ The team performs prompt injection testing.
         "hipaa",
         "prompt_injection_testing",
     }
+
+
+def test_assigns_polarity_relative_to_canonical_proposition(tmp_path):
+    (tmp_path / "soc2.md").write_text(
+        "We have not completed a SOC 2 Type II audit.\n\n"
+        "SOC 2 Type II is listed on the roadmap.",
+        encoding="utf-8",
+    )
+    document = load_documents_from_directory(tmp_path)[0]
+
+    facts = extract_facts_from_chunks(chunk_document(document))
+
+    assert [fact.polarity for fact in facts] == [
+        FactPolarity.NEGATIVE,
+        FactPolarity.NEUTRAL,
+    ]
+
+
+def test_does_not_treat_every_not_as_negative(tmp_path):
+    (tmp_path / "encryption.md").write_text(
+        "Customer data is not only encrypted at rest, but also backed up.",
+        encoding="utf-8",
+    )
+    document = load_documents_from_directory(tmp_path)[0]
+
+    fact = extract_facts_from_chunks(chunk_document(document))[0]
+
+    assert fact.polarity is FactPolarity.POSITIVE
+
+
+def test_assigns_explicit_control_scoped_applicability(tmp_path):
+    (tmp_path / "applicability.md").write_text(
+        "Encryption at rest is not applicable to this stateless component.\n\n"
+        "Encryption at rest is enabled; automatic key rotation is not applicable.",
+        encoding="utf-8",
+    )
+    document = load_documents_from_directory(tmp_path)[0]
+
+    facts = extract_facts_from_chunks(chunk_document(document))
+
+    assert facts[0].applicability is FactApplicability.NOT_APPLICABLE
+    assert facts[0].polarity is FactPolarity.NEUTRAL
+    assert facts[1].applicability is FactApplicability.APPLICABLE
+    assert facts[1].polarity is FactPolarity.POSITIVE

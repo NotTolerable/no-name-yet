@@ -1,6 +1,13 @@
 """Deterministic answer generation from policy-approved evidence."""
 
-from core.models import Answer, Fact, PolicyDecision, PolicyStatus, Question
+from core.models import (
+    Answer,
+    EvidenceStatus,
+    Fact,
+    FactReviewStatus,
+    PolicyDecision,
+    Question,
+)
 
 
 DEFICIT_ANSWER = (
@@ -17,6 +24,7 @@ def _approved_facts(
         facts_by_id[fact_id]
         for fact_id in policy_decision.cited_fact_ids
         if fact_id in facts_by_id
+        and facts_by_id[fact_id].review_status is FactReviewStatus.APPROVED
     ]
 
 
@@ -34,10 +42,10 @@ def generate_answer(
     if policy_decision.question_id != question.id:
         raise ValueError("Policy decision does not belong to this question")
 
-    if policy_decision.status is PolicyStatus.DEFICIT:
+    if policy_decision.evidence_status is EvidenceStatus.DEFICIT:
         return Answer(
             question_id=question.id,
-            status=PolicyStatus.DEFICIT,
+            status=EvidenceStatus.DEFICIT,
             answer_text=DEFICIT_ANSWER,
             citations=[],
             policy_reason=policy_decision.reason,
@@ -52,7 +60,7 @@ def generate_answer(
     documented_claims = _unique([fact.claim.strip() for fact in approved_facts])
     citations = _unique([fact.evidence_quote.strip() for fact in approved_facts])
 
-    if policy_decision.status is PolicyStatus.PARTIAL:
+    if policy_decision.evidence_status is EvidenceStatus.PARTIAL:
         answer_text = (
             "Based on the limited available evidence, "
             + " ".join(documented_claims)
@@ -63,7 +71,7 @@ def generate_answer(
 
     return Answer(
         question_id=question.id,
-        status=policy_decision.status,
+        status=policy_decision.evidence_status,
         answer_text=answer_text,
         citations=citations,
         policy_reason=policy_decision.reason,
