@@ -1,0 +1,126 @@
+name: Feature
+description: Propose one PR-sized Verilly capability or improvement.
+title: "[Feature]: "
+labels: []
+assignees: []
+body:
+  - type: input
+    id: feature_title
+    attributes:
+      label: Feature title
+      description: Give the feature a short, specific name.
+      placeholder: Versioned control catalog
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: Primary owner
+      description: Name the one developer responsible for implementation.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: workstream
+    attributes:
+      label: Owner workstream
+      description: Select the primary ownership boundary.
+      options:
+        - Core and domain
+        - Workflow and integration
+        - Shared integration
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete problem exists today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What outcome should this issue deliver?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architectural_boundary
+    attributes:
+      label: Primary architectural boundary
+      options:
+        - Deterministic core
+        - Workflow/application
+        - AI integration
+        - API
+        - Persistence
+        - Frontend
+        - Documentation only
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: List earlier issues or PRs that must land first, or write "None."
+    validations:
+      required: true
+
+  - type: textarea
+    id: files_expected
+    attributes:
+      label: Files expected to change
+      description: List the allowed files or directories as narrowly as practical.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: files_prohibited
+    attributes:
+      label: Files prohibited
+      description: List files or boundaries that this issue must not change.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, testable outcomes.
+      placeholder: |
+        - [ ] Identical inputs produce identical results.
+        - [ ] Unknown control IDs fail validation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: required_tests
+    attributes:
+      label: Required tests
+      description: Name focused and full-suite verification required before completion.
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Explicit non-goals
+      description: State what this issue intentionally does not implement.
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: Identify safety, compatibility, migration, or coordination risks.
+    validations:
+      required: true

@@ -38,6 +38,19 @@ There is currently no canonical control catalog, dependency graph, control-readi
 9. Keep credentials backend-only. Production authorization, RLS, retention, and hardening remain out of scope.
 10. Preserve stable source identifiers and traceability across documents, chunks, facts, questions, decisions, citations, and remediation.
 
+## Collaborative Development
+
+1. Repository documentation is the shared source of truth; prior chat history is not.
+2. Every implementation task begins by reading `AGENTS.md`, `ROADMAP.md`, `docs/architecture.md`, `docs/domain-model.md`, `docs/invariants.md`, `docs/development-workflow.md`, and `docs/workstreams.md`.
+3. Every task identifies its owner, issue or PR, goal, allowed files, prohibited files, acceptance criteria, required tests, and explicit non-goals.
+4. The deterministic kernel must not depend on LangGraph, LangChain, Supabase, FastAPI, frontend code, or external services.
+5. LangGraph may orchestrate kernel operations but may not redefine policy decisions.
+6. Developers should avoid editing the same architectural files simultaneously.
+7. Changes to domain semantics or architectural invariants require review from both developers.
+8. Codex must inspect the current worktree before editing and preserve unrelated changes.
+9. Work is not complete until required tests and diff inspection have been reported.
+10. Stage intentional files only. Do not use `git add .` in documented workflows.
+
 ## Verification
 
 From the repository root on Windows:
