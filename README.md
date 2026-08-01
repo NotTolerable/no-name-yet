@@ -66,7 +66,7 @@ Pydantic defines and validates the domain contracts. The deterministic domain ke
 
 Supabase is intended to store durable business records and uploaded or generated files. LangGraph checkpoints execution state but must not replace those business records. LangSmith or OpenTelemetry may be introduced later for tracing and evaluation.
 
-The current implementation is substantially smaller: it uses deterministic regex extraction and matching, a synchronous local pipeline, a demo FastAPI API, a Next.js review UI, and optional Supabase PostgREST persistence. It does not yet include LangGraph, LangChain, LLM services, authentication, uploads, human-review workflows, a control dependency graph, export generation, Supabase Storage, or production observability.
+The current implementation is substantially smaller: it uses deterministic regex extraction and matching, a synchronous local pipeline, a demo FastAPI API, a Next.js review UI, optional Supabase PostgREST persistence, and an offline versioned control dependency-graph utility. The graph is not integrated into verification or readiness. The system does not yet include LangGraph, LangChain, LLM services, authentication, uploads, human-review workflows, export generation, Supabase Storage, or production observability.
 
 For detailed component boundaries, workflows, data ownership, and design invariants, see [docs/architecture.md](docs/architecture.md).
 
@@ -105,6 +105,7 @@ The core modules are separated by responsibility:
 
 - `backend/core/fact_graph.py`: loads documents, chunks them, and extracts explicit facts.
 - `backend/core/evidence_matcher.py`: ranks candidate facts using control/category, keyword, and risk-domain signals.
+- `backend/core/dependency_graph.py`: loads and validates the versioned control graph and provides deterministic prerequisite queries; it is not yet part of verification.
 - `backend/core/policy.py`: returns `SUPPORTED`, `PARTIAL`, or `DEFICIT` deterministically.
 - `backend/core/answer_generator.py`: renders only policy-approved facts and citations.
 - `backend/core/deficit_generator.py`: creates remediation tasks for deficits.

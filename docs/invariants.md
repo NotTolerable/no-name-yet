@@ -12,9 +12,13 @@ These rules are product safety properties, not implementation preferences.
 8. **Fail closed on conflict.** Conflicting approved positive and negative evidence produces `PARTIAL + UNKNOWN`, not an unqualified answer.
 9. **Traceable provenance.** Every cited fact resolves to a source chunk and document; stable identifiers do not change for identical inputs.
 10. **Evidence is not readiness.** Direct evidence and answer value remain separate from dependency readiness (`READY`, `INCOMPLETE`, `BLOCKED`).
-11. **Dependencies do not create evidence.** Future prerequisites may block readiness but cannot authorize or strengthen a direct claim.
-12. **Curated deterministic graph.** Future dependency edges are human-curated, versioned, acyclic, and never generated or overridden by an LLM.
-13. **Policy boundary.** Wording, infrastructure, persistence, or future model output cannot override deterministic policy.
-14. **Review artifact only.** Outputs never imply certification, legal advice, audit assurance, production compliance, or automatic procurement approval.
+11. **Separate state and dependency models.** The organization-specific Technical State Map contains reviewed facts; the control dependency graph contains curated product knowledge. Facts are never graph nodes or edges.
+12. **Dependencies do not create evidence.** Prerequisites may block readiness in future assessment, but the graph cannot authorize or strengthen a direct claim.
+13. **Curated deterministic graph.** Dependency edges are human-curated, versioned, acyclic, and never generated or overridden by an LLM.
+14. **Invalid graphs fail closed.** Unknown controls, invalid or duplicate identifiers and edges, self-dependencies, version mismatches, and cycles are configuration errors, not warnings.
+15. **Deterministic graph operations.** Identical catalogs, graph versions, and query inputs produce identical traversal and topological ordering results.
+16. **Assurance requires evidence.** `soc2_status` cannot be inferred solely from technical dependency completion.
+17. **Policy boundary.** Wording, infrastructure, persistence, dependency data, or future model output cannot override deterministic policy.
+18. **Review artifact only.** Outputs never imply certification, legal advice, audit assurance, production compliance, or automatic procurement approval.
 
 Changing these invariants requires explicit product review, documentation updates, and negative-case regression tests.
