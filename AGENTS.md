@@ -23,7 +23,7 @@ Verilly produces review artifacts, not certification, legal advice, audit assura
 
 The backend deterministically loads `.md`/`.txt` documents and JSON/CSV questionnaires, chunks documents, extracts narrow regex-based facts, matches evidence heuristically, applies a fail-closed policy gate, drafts answers only from cited facts, and creates remediation for deficits. FastAPI exposes synthetic demo endpoints. Next.js renders the demo and stores the latest packet in session storage. Supabase persistence is optional.
 
-There is currently no canonical control catalog, dependency graph, control-readiness assessment, or dependency-aware result. Those are target capabilities for the next milestone and must not be confused with the current Technical State Map of extracted facts.
+A canonical versioned control catalog and deterministic dependency-graph utility now exist, but they are not integrated into the end-to-end pipeline. There is still no control-readiness assessment or dependency-aware result. The graph remains separate from the Technical State Map of extracted facts.
 
 ## Engineering rules
 

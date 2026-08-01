@@ -1,0 +1,113 @@
+{
+  "catalog_version": "1.0.0",
+  "dependencies": [
+    {
+      "control_id": "tenant_data_scoping",
+      "depends_on_control_id": "identity_management",
+      "dependency_type": "REQUIRED",
+      "reason": "Tenant-scoped access requires a reliable identity context."
+    },
+    {
+      "control_id": "role_based_access",
+      "depends_on_control_id": "identity_management",
+      "dependency_type": "REQUIRED",
+      "reason": "Roles can be enforced only for managed identities."
+    },
+    {
+      "control_id": "privileged_access_management",
+      "depends_on_control_id": "identity_management",
+      "dependency_type": "REQUIRED",
+      "reason": "Privileged access must be assigned to managed identities."
+    },
+    {
+      "control_id": "privileged_access_management",
+      "depends_on_control_id": "role_based_access",
+      "dependency_type": "REQUIRED",
+      "reason": "Privileged permissions require defined and enforceable access roles."
+    },
+    {
+      "control_id": "privileged_action_logging",
+      "depends_on_control_id": "centralized_audit_logging",
+      "dependency_type": "REQUIRED",
+      "reason": "Privileged actions need an audit logging path that records their events."
+    },
+    {
+      "control_id": "privileged_action_logging",
+      "depends_on_control_id": "privileged_access_management",
+      "dependency_type": "SUPPORTING",
+      "reason": "Governed privileged identities improve attribution of elevated actions."
+    },
+    {
+      "control_id": "audit_readiness",
+      "depends_on_control_id": "centralized_audit_logging",
+      "dependency_type": "REQUIRED",
+      "reason": "Audit preparation requires collected, reviewable audit events."
+    },
+    {
+      "control_id": "audit_readiness",
+      "depends_on_control_id": "log_retention",
+      "dependency_type": "REQUIRED",
+      "reason": "Audit evidence must remain available for a defined period."
+    },
+    {
+      "control_id": "audit_readiness",
+      "depends_on_control_id": "privileged_action_logging",
+      "dependency_type": "SUPPORTING",
+      "reason": "Privileged-action records strengthen audit evidence coverage."
+    },
+    {
+      "control_id": "incident_alerting",
+      "depends_on_control_id": "centralized_audit_logging",
+      "dependency_type": "REQUIRED",
+      "reason": "Incident alerts require collected security-relevant event signals."
+    },
+    {
+      "control_id": "incident_response_testing",
+      "depends_on_control_id": "incident_response_policy",
+      "dependency_type": "REQUIRED",
+      "reason": "Response exercises require documented roles and procedures to test."
+    },
+    {
+      "control_id": "incident_response_readiness",
+      "depends_on_control_id": "incident_response_policy",
+      "dependency_type": "REQUIRED",
+      "reason": "Readiness requires a documented response process."
+    },
+    {
+      "control_id": "incident_response_readiness",
+      "depends_on_control_id": "incident_alerting",
+      "dependency_type": "REQUIRED",
+      "reason": "Readiness requires a way to detect and route potential incidents."
+    },
+    {
+      "control_id": "incident_response_readiness",
+      "depends_on_control_id": "incident_response_testing",
+      "dependency_type": "REQUIRED",
+      "reason": "Readiness requires the response process to be exercised."
+    },
+    {
+      "control_id": "incident_response_readiness",
+      "depends_on_control_id": "centralized_audit_logging",
+      "dependency_type": "SUPPORTING",
+      "reason": "Central audit records improve investigation context during response."
+    },
+    {
+      "control_id": "pii_handling",
+      "depends_on_control_id": "tenant_data_scoping",
+      "dependency_type": "SUPPORTING",
+      "reason": "Tenant scoping reduces unintended cross-tenant exposure of personal data."
+    },
+    {
+      "control_id": "prompt_retention",
+      "depends_on_control_id": "data_retention",
+      "dependency_type": "SUPPORTING",
+      "reason": "A general retention policy provides context for prompt-specific periods."
+    },
+    {
+      "control_id": "model_training_opt_out",
+      "depends_on_control_id": "pii_handling",
+      "dependency_type": "SUPPORTING",
+      "reason": "PII handling practices support governance of training-data exclusions."
+    }
+  ]
+}

@@ -38,6 +38,8 @@ The PRs below are ordered dependencies. PR 1 must be completed and merged before
 
 **Owner:** Core/domain owner
 
+**Status:** Implemented in the working tree; pending review and merge.
+
 **Scope:**
 
 - Control and dependency definitions.

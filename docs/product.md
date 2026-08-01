@@ -12,7 +12,7 @@ Verilly helps early-stage B2B AI companies review enterprise security and AI-gov
 - Supported and partial answers contain policy-cited source quotations. Deficits use fixed refusal text and create remediation tasks.
 - A `TrustPacket` contains answers, remediation tasks, and a count summary.
 - FastAPI serves demo runs; Next.js displays results. Supabase storage is optional and unverified against a live project.
-- There is no control catalog, dependency graph, readiness assessment, or dependency-aware remediation in current application behavior.
+- A versioned control catalog and offline dependency-graph utility exist, but current application behavior does not invoke them. There is no readiness assessment or dependency-aware remediation.
 
 ## Current boundaries
 

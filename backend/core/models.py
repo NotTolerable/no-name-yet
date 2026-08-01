@@ -2,7 +2,11 @@
 
 from enum import StrEnum
 
-from pydantic import AliasChoices, BaseModel, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+
+
+CONTROL_ID_PATTERN = r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+CATALOG_VERSION_PATTERN = r"^\d+\.\d+\.\d+$"
 
 
 class EvidenceStatus(StrEnum):
@@ -52,6 +56,69 @@ class FactApplicability(StrEnum):
 class QuestionResponseKind(StrEnum):
     BINARY = "BINARY"
     FREE_TEXT = "FREE_TEXT"
+
+
+class DependencyType(StrEnum):
+    """How a prerequisite affects a dependent control in future assessment."""
+
+    REQUIRED = "REQUIRED"
+    SUPPORTING = "SUPPORTING"
+
+
+class _GraphModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
+
+
+class ControlDefinition(_GraphModel):
+    id: str = Field(pattern=CONTROL_ID_PATTERN)
+    name: str = Field(min_length=1)
+    domain: str = Field(pattern=CONTROL_ID_PATTERN)
+    description: str = Field(min_length=1)
+    catalog_version: str = Field(pattern=CATALOG_VERSION_PATTERN)
+
+
+class ControlDependency(_GraphModel):
+    """A directed prerequisite: control_id depends on depends_on_control_id."""
+
+    control_id: str = Field(pattern=CONTROL_ID_PATTERN)
+    depends_on_control_id: str = Field(pattern=CONTROL_ID_PATTERN)
+    dependency_type: DependencyType
+    reason: str = Field(min_length=1)
+
+
+class ControlCatalog(_GraphModel):
+    catalog_version: str = Field(pattern=CATALOG_VERSION_PATTERN)
+    controls: tuple[ControlDefinition, ...]
+
+    @model_validator(mode="after")
+    def validate_catalog_consistency(self) -> "ControlCatalog":
+        control_ids = [control.id for control in self.controls]
+        duplicate_ids = sorted(
+            control_id
+            for control_id in set(control_ids)
+            if control_ids.count(control_id) > 1
+        )
+        if duplicate_ids:
+            raise ValueError(
+                "Duplicate control IDs: " + ", ".join(duplicate_ids)
+            )
+
+        mismatched_ids = sorted(
+            control.id
+            for control in self.controls
+            if control.catalog_version != self.catalog_version
+        )
+        if mismatched_ids:
+            raise ValueError(
+                "Control catalog versions do not match catalog_version for: "
+                + ", ".join(mismatched_ids)
+            )
+        return self
+
+
+class ControlDependencySet(_GraphModel):
+    catalog_version: str = Field(pattern=CATALOG_VERSION_PATTERN)
+    dependencies: tuple[ControlDependency, ...]
 
 
 class Document(BaseModel):

@@ -1,0 +1,152 @@
+{
+  "catalog_version": "1.0.0",
+  "controls": [
+    {
+      "id": "identity_management",
+      "name": "Identity Management",
+      "domain": "identity_and_access",
+      "description": "Creates and maintains identities used to access company systems.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "role_based_access",
+      "name": "Role-Based Access",
+      "domain": "identity_and_access",
+      "description": "Assigns permissions through defined roles and responsibilities.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "privileged_access_management",
+      "name": "Privileged Access Management",
+      "domain": "identity_and_access",
+      "description": "Restricts and governs elevated access to sensitive systems.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "tenant_data_scoping",
+      "name": "Tenant Data Scoping",
+      "domain": "identity_and_access",
+      "description": "Scopes data access and operations to the intended tenant.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "encryption_at_rest",
+      "name": "Encryption at Rest",
+      "domain": "data_protection",
+      "description": "Protects stored sensitive data using encryption.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "encryption_in_transit",
+      "name": "Encryption in Transit",
+      "domain": "data_protection",
+      "description": "Protects sensitive data while it moves between systems.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "secrets_management",
+      "name": "Secrets Management",
+      "domain": "data_protection",
+      "description": "Controls the storage, access, and rotation of application secrets.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "pii_handling",
+      "name": "PII Handling",
+      "domain": "data_protection",
+      "description": "Defines how personally identifiable information is identified and handled.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "data_retention",
+      "name": "Data Retention",
+      "domain": "data_protection",
+      "description": "Defines retention and deletion periods for governed data.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "centralized_audit_logging",
+      "name": "Centralized Audit Logging",
+      "domain": "logging_and_auditability",
+      "description": "Collects security-relevant audit events in a central system.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "log_retention",
+      "name": "Log Retention",
+      "domain": "logging_and_auditability",
+      "description": "Retains logs for a defined and reviewable period.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "privileged_action_logging",
+      "name": "Privileged Action Logging",
+      "domain": "logging_and_auditability",
+      "description": "Records actions performed through privileged access.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "audit_readiness",
+      "name": "Audit Readiness",
+      "domain": "logging_and_auditability",
+      "description": "Maintains reviewable records needed to support audit preparation.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "incident_alerting",
+      "name": "Incident Alerting",
+      "domain": "incident_response",
+      "description": "Detects and routes signals that may require incident response.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "incident_response_policy",
+      "name": "Incident Response Policy",
+      "domain": "incident_response",
+      "description": "Documents roles and procedures for responding to incidents.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "incident_response_testing",
+      "name": "Incident Response Testing",
+      "domain": "incident_response",
+      "description": "Exercises the documented incident response process.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "incident_response_readiness",
+      "name": "Incident Response Readiness",
+      "domain": "incident_response",
+      "description": "Represents preparedness to detect, coordinate, and test incident response.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "prompt_retention",
+      "name": "Prompt Retention",
+      "domain": "ai_governance",
+      "description": "Defines how prompts are retained and deleted.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "model_training_opt_out",
+      "name": "Model Training Opt-Out",
+      "domain": "ai_governance",
+      "description": "Governs whether customer data is excluded from model training.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "prompt_injection_testing",
+      "name": "Prompt Injection Testing",
+      "domain": "ai_governance",
+      "description": "Tests AI-enabled features against prompt-injection scenarios.",
+      "catalog_version": "1.0.0"
+    },
+    {
+      "id": "soc2_status",
+      "name": "SOC 2 Status",
+      "domain": "assurance_status",
+      "description": "Records the directly evidenced status of the organization's SOC 2 examination.",
+      "catalog_version": "1.0.0"
+    }
+  ]
+}
